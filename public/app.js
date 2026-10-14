@@ -37,7 +37,7 @@ async function completeGoogleOAuth(){let params=new URLSearchParams(location.sea
 function googleCalendarPanel(){if(!googleCalendarReady())return `<section class="integration"><strong>Google Calendar</strong><p>${esc(googleCalendarSetupMessage())}</p><button class="secondary-button" disabled>Sync not available yet</button></section>`;if(!googleCalendarToken)return '<section class="integration"><strong>Google Calendar</strong><p>Connect your Google account to view, create, edit, and delete events in Renova.</p><button class="secondary-button" onclick="connectGoogleCalendar()">Connect Google Calendar</button></section>';let email=sessionStorage.getItem(googleEmailKey)||'Connected account';return `<section class="integration"><strong>Google Calendar</strong><p>Connected as ${esc(email)}. Changes made here are saved to Google Calendar.</p><div class="calendar-actions"><button class="secondary-button" onclick="refreshGoogleCalendar(true)">Sync now</button><button class="text-button" onclick="disconnectGoogleCalendar()">Disconnect</button></div>${googleCalendarBusy?'<small class="muted">Syncing…</small>':''}${googleCalendarError?`<small class="error">${esc(googleCalendarError)}</small>`:''}</section>`}
 function calendar(){
 let weekStart=calendarWeekStart(),weekEnd=new Date(weekStart.getFullYear(),weekStart.getMonth(),weekStart.getDate()+6),events=calendarEvents(),weekEvents=events.filter(e=>e.date>=iso(weekStart)&&e.date<=iso(weekEnd)).sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||'')),days='';
-for(let i=0;i<7;i++){let day=new Date(weekStart.getFullYear(),weekStart.getMonth(),weekStart.getDate()+i),key=iso(day),dayEvents=weekEvents.filter(e=>e.date===key),isToday=key===now;days+=`<article class="week-day ${isToday?'today':''} ${dayEvents.length?'has-events':''}"><button class="week-day-date" onclick="openEvent('${key}')" aria-label="Add event on ${key}"><span class="week-day-name">${day.toLocaleDateString(undefined,{weekday:'short'})}</span><span class="week-day-number">${day.getDate()}</span></button><div class="week-day-events">${dayEvents.map(e=>`<div class="week-event ${e.source==='google'?'google-event':''}" title="${esc(e.title)}${e.time?' · '+esc(e.time):''}" ${e.source==='google'?`role="button" tabindex="0" onclick="openGoogleEvent('${encodeURIComponent(e.googleId)}')" onkeydown="if(event.key==='Enter')openGoogleEvent('${encodeURIComponent(e.googleId)}')"`:''}><span class="week-event-time">${e.time?esc(e.time):'All day'}</span><span class="week-event-dot ${e.source==='google'?'google':''}"></span><span class="week-event-title">${esc(e.title)}</span><span class="week-event-source">${e.source==='google'?'Google':'Renova'}</span></div>`).join('')||'<span class="week-empty">No events</span>'}</div><button class="week-add" onclick="openEvent('${key}')" aria-label="Add event on ${key}">+</button></article>`}
+for(let i=0;i<7;i++){let day=new Date(weekStart.getFullYear(),weekStart.getMonth(),weekStart.getDate()+i),key=iso(day),dayEvents=weekEvents.filter(e=>e.date===key),isToday=key===now;days+=`<article class="week-day ${isToday?'today':''} ${dayEvents.length?'has-events':''}"><button class="week-day-date" onclick="openEvent('${key}')" aria-label="Add event on ${key}"><span class="week-day-name">${day.toLocaleDateString(undefined,{weekday:'short'})}</span><span class="week-day-number">${day.getDate()}</span></button><div class="week-day-events">${dayEvents.map(e=>`<div class="week-event ${e.source==='google'?'google-event':'local-event'}" title="${esc(e.title)}${e.time?' · '+esc(e.time):''}" role="button" tabindex="0" onclick="${e.source==='google'?`openGoogleEvent('${encodeURIComponent(e.googleId)}')`:`openEvent('${e.date}','${e.id}')`}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}"><span class="week-event-time">${e.time?esc(e.time):'All day'}</span><span class="week-event-dot ${e.source==='google'?'google':''}"></span><span class="week-event-title">${esc(e.title)}</span><span class="week-event-source">${e.source==='google'?'Google':'Renova'}</span></div>`).join('')||'<span class="week-empty">No events</span>'}</div><button class="week-add" onclick="openEvent('${key}')" aria-label="Add event on ${key}">+</button></article>`}
 let rangeLabel=weekStart.getMonth()===weekEnd.getMonth()?`${weekStart.toLocaleDateString(undefined,{month:'long'})} ${weekStart.getDate()}–${weekEnd.getDate()}, ${weekEnd.getFullYear()}`:`${weekStart.toLocaleDateString(undefined,{month:'short',day:'numeric'})} – ${weekEnd.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})}`;
 return heading('Calendar','A clear view of this week’s plans.',`<button class="primary-button" onclick="openEvent()">＋ New event</button>`)+`<div class="calendar-layout"><section class="panel week-panel"><div class="calendar-toolbar"><button class="secondary-button week-nav-button" onclick="changeCalendarWeek(-1)" aria-label="Previous week">‹</button><div class="week-heading"><h2>${rangeLabel}</h2><span>${weekEvents.length} ${weekEvents.length===1?'event':'events'}</span></div><button class="secondary-button week-nav-button" onclick="changeCalendarWeek(1)" aria-label="Next week">›</button><button class="text-button calendar-today" onclick="calendarOffset=0;googleCalendarFetchKey='';render()">This week</button></div><div class="week-days">${days}</div></section><aside class="section-stack calendar-sidebar">${googleCalendarPanel()}<section class="panel week-upcoming"><div class="panel-title"><h2>This week</h2></div>${weekEvents.map(e=>`<div class="list-row"><span class="event-dot ${e.source==='google'?'google-dot':''}"></span><div class="event-info"><b>${esc(e.title)}</b><small>${new Date(e.date+'T12:00').toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})} · ${e.time||'All day'} · ${e.source==='google'?'Google Calendar':'Renova'}</small></div>${e.source==='google'?`<button class="text-button" onclick="openGoogleEvent('${encodeURIComponent(e.googleId)}')">Edit</button>`:''}</div>`).join('')||'<div class="empty">Nothing scheduled this week.</div>'}</section></aside></div>`
 }
@@ -229,27 +229,31 @@ function finance() {
     'Finance',
     'A clear record of what you’ve chosen to track.',
     '<button class="primary-button" onclick="openTransaction()">＋ Record transaction</button>',
-  ) + `<div class="dashboard-grid"><div class="section-stack"><section class="panel"><div class="snapshot"><div class="metric"><div class="value">${money(balance())}</div><div class="label">Recorded balance</div></div><div class="metric"><div class="value income">${money(totals.income)}</div><div class="label">Income this month</div></div><div class="metric"><div class="value expense">${money(totals.expense)}</div><div class="label">Expenses this month</div></div><div class="metric"><div class="value">${money(totals.income - totals.expense)}</div><div class="label">Net cash flow</div></div></div></section><section class="panel"><div class="panel-title"><h2>Recent transactions</h2></div>${transactions.map((transaction) => `<div class="list-row finance-transaction"><div class="event-info"><b>${esc(transaction.description || transaction.category || transaction.type)}</b><small>${esc(transaction.date || '')} · ${esc(transaction.category || 'Uncategorized')}</small></div><span class="amount ${transaction.type === 'Income' ? 'income' : 'expense'}">${transaction.type === 'Income' ? '+' : '−'}${money(transaction.amount)}</span><button class="text-button danger-button" onclick="deleteTransaction('${transaction.id}')">Delete</button></div>`).join('') || '<div class="empty">No transactions recorded. Add one to begin.</div>'}</section></div><div class="section-stack"><section class="panel"><div class="panel-title"><h2>Accounts</h2><button class="text-button" onclick="openAccount()">Add</button></div>${state.accounts.map((account) => `<div class="list-row"><div class="event-info"><b>${esc(account.name)}</b><small>${esc(account.type || 'Account')}</small></div><span class="amount">${money(account.initial)}</span></div>`).join('') || '<div class="empty">Add your first account.</div>'}</section><section class="panel"><div class="panel-title"><h2>Spending by category</h2></div>${spendingByCategory()}</section><section class="panel"><div class="panel-title"><h2>Spending trend</h2></div>${spendingTrend()}</section></div></div>`;
+  ) + `<div class="dashboard-grid"><div class="section-stack"><section class="panel"><div class="snapshot"><div class="metric"><div class="value">${money(balance())}</div><div class="label">Recorded balance</div></div><div class="metric"><div class="value income">${money(totals.income)}</div><div class="label">Income this month</div></div><div class="metric"><div class="value expense">${money(totals.expense)}</div><div class="label">Expenses this month</div></div><div class="metric"><div class="value">${money(totals.income - totals.expense)}</div><div class="label">Net cash flow</div></div></div></section><section class="panel"><div class="panel-title"><h2>Recent transactions</h2></div>${transactions.map((transaction) => `<div class="list-row finance-transaction"><div class="event-info"><b>${esc(transaction.description || transaction.category || transaction.type)}</b><small>${esc(transaction.date || '')} · ${esc(transaction.category || 'Uncategorized')}</small></div><span class="amount ${transaction.type === 'Income' ? 'income' : 'expense'}">${transaction.type === 'Income' ? '+' : '−'}${money(transaction.amount)}</span><button class="text-button" onclick="openTransaction('${transaction.id}')">Edit</button><button class="text-button danger-button" onclick="deleteTransaction('${transaction.id}')">Delete</button></div>`).join('') || '<div class="empty">No transactions recorded. Add one to begin.</div>'}</section></div><div class="section-stack"><section class="panel"><div class="panel-title"><h2>Accounts</h2><button class="text-button" onclick="openAccount()">Add</button></div>${state.accounts.map((account) => `<div class="list-row"><div class="event-info"><b>${esc(account.name)}</b><small>${esc(account.type || 'Account')}</small></div><span class="amount">${money(account.initial)}</span></div>`).join('') || '<div class="empty">Add your first account.</div>'}</section><section class="panel"><div class="panel-title"><h2>Spending by category</h2></div>${spendingByCategory()}</section><section class="panel"><div class="panel-title"><h2>Spending trend</h2></div>${spendingTrend()}</section></div></div>`;
 }
 
-function openTransaction() {
+function openTransaction(id = '') {
+  const transaction = state.transactions.find((item) => item.id === id);
   modal(
-    `<h2>Record transaction</h2><form onsubmit="saveTransaction(event)"><div class="form-grid"><div class="field"><label>Type</label><select name="type"><option>Expense</option><option>Income</option></select></div><div class="field"><label>Amount</label><div class="currency-input"><span>Rp</span><input name="amount" type="text" inputmode="numeric" autocomplete="off" required placeholder="0" oninput="formatRupiahInput(this)"></div></div><div class="field"><label>Date</label><input name="date" type="date" value="${now}" required></div><div class="field"><label>Category</label><select name="category"><option value="">Choose a category</option>${financeCategories.map((category) => `<option>${category}</option>`).join('')}</select></div><div class="field full"><label>Description</label><input name="description" placeholder="What was this for?"></div></div><div class="modal-actions"><button type="button" class="secondary-button" onclick="closeModal()">Cancel</button><button class="primary-button">Save transaction</button></div></form>`,
+    `<h2>${id ? 'Edit transaction' : 'Record transaction'}</h2><form onsubmit="saveTransaction(event,'${id}')"><div class="form-grid"><div class="field"><label>Type</label><select name="type">${['Expense', 'Income'].map((type) => `<option ${transaction?.type === type ? 'selected' : ''}>${type}</option>`).join('')}</select></div><div class="field"><label>Amount</label><div class="currency-input"><span>Rp</span><input name="amount" type="text" inputmode="numeric" autocomplete="off" required placeholder="0" value="${transaction ? new Intl.NumberFormat('id-ID').format(Number(transaction.amount)) : ''}" oninput="formatRupiahInput(this)"></div></div><div class="field"><label>Date</label><input name="date" type="date" value="${esc(transaction?.date || now)}" required></div><div class="field"><label>Category</label><select name="category"><option value="">Choose a category</option>${financeCategories.map((category) => `<option ${transaction?.category === category ? 'selected' : ''}>${category}</option>`).join('')}${transaction?.category && !financeCategories.includes(transaction.category) ? `<option selected>${esc(transaction.category)}</option>` : ''}</select></div><div class="field full"><label>Description</label><input name="description" value="${esc(transaction?.description || '')}" placeholder="What was this for?"></div></div><div class="modal-actions"><button type="button" class="secondary-button" onclick="closeModal()">Cancel</button><button class="primary-button">${id ? 'Save changes' : 'Save transaction'}</button></div></form>`,
   );
 }
 
-function saveTransaction(event) {
+function saveTransaction(event, id = '') {
   event.preventDefault();
   const values = Object.fromEntries(new FormData(event.target));
-  state.transactions.push({
+  const nextTransaction = {
     ...values,
     amount: parseRupiahInput(values.amount),
-    id: crypto.randomUUID(),
-  });
+    id: id || crypto.randomUUID(),
+  };
+  const existing = state.transactions.find((transaction) => transaction.id === id);
+  if (existing) Object.assign(existing, nextTransaction);
+  else state.transactions.push(nextTransaction);
   save();
   closeModal();
   render();
-  toast('Transaction recorded');
+  toast(id ? 'Transaction updated' : 'Transaction recorded');
 }
 
 function deleteTransaction(id) {
@@ -286,3 +290,53 @@ function openProject(id = '') {
     `<h2>${id ? 'Edit' : 'New'} project</h2><form onsubmit="saveProject(event,'${id}')"><div class="form-grid"><div class="field full"><label>Project name</label><input name="name" required value="${esc(project.name)}" placeholder="What are you moving forward?"></div><div class="field"><label>Status</label><select name="status">${['Active', 'On hold', 'Completed'].map((status) => `<option ${project.status === status ? 'selected' : ''}>${status}</option>`).join('')}</select></div><div class="field"><label>Target date</label><input name="targetDate" type="date" value="${project.targetDate || ''}"></div><div class="field full"><label>Description</label><textarea name="description">${esc(project.description)}</textarea></div></div><div class="modal-actions">${id ? `<button type="button" class="text-button danger-button" onclick="deleteProject('${id}')">Delete</button>` : ''}<button type="button" class="secondary-button" onclick="cancelTaskProjectCreation()">Cancel</button><button class="primary-button">Save project</button></div></form>`,
   );
 }
+
+function openEvent(date = now, id = '') {
+  const localEvent = state.events.find((event) => event.id === id);
+  const selectedDate = localEvent?.date || date;
+  const destination = !id && googleCalendarToken
+    ? `<div class="field"><label>Save to</label><select name="source"><option value="local">Renova only</option><option value="google">Google Calendar</option></select></div>`
+    : '';
+  modal(
+    `<h2>${id ? 'Edit event' : 'New event'}</h2><form onsubmit="saveEvent(event,'${id}')"><div class="form-grid"><div class="field full"><label>Title</label><input name="title" required value="${esc(localEvent?.title || '')}" placeholder="Event name"></div><div class="field"><label>Date</label><input name="date" type="date" value="${esc(selectedDate)}" required></div><div class="field"><label>Time</label><input name="time" type="time" value="${esc(localEvent?.time || '')}"></div><div class="field full"><label>Location or link</label><input name="location" value="${esc(localEvent?.location || '')}" placeholder="Optional"></div>${destination}</div><div class="modal-actions">${id ? `<button type="button" class="text-button danger-button" onclick="deleteLocalEvent('${id}')">Delete event</button>` : ''}<button type="button" class="secondary-button" onclick="closeModal()">Cancel</button><button class="primary-button">${id ? 'Save changes' : 'Save event'}</button></div></form>`,
+  );
+}
+
+function saveEvent(event, id = '') {
+  event.preventDefault();
+  const values = Object.fromEntries(new FormData(event.target));
+  if (!id && values.source === 'google') {
+    void saveGoogleEvent(event, '');
+    return;
+  }
+
+  const { source: _source, ...eventValues } = values;
+  const existing = state.events.find((item) => item.id === id);
+  if (existing) Object.assign(existing, eventValues);
+  else state.events.push({ ...eventValues, id: crypto.randomUUID(), source: 'local' });
+
+  save();
+  closeModal();
+  render();
+  toast(id ? 'Event updated' : 'Event added');
+}
+
+function deleteLocalEvent(id) {
+  if (!confirm('Delete this event?')) return;
+  state.events = state.events.filter((event) => event.id !== id);
+  save();
+  closeModal();
+  render();
+  toast('Event deleted');
+}
+
+document.addEventListener('click', (event) => {
+  const target = event.target;
+  if (
+    target instanceof HTMLInputElement &&
+    target.type === 'date' &&
+    typeof target.showPicker === 'function'
+  ) {
+    target.showPicker();
+  }
+});
