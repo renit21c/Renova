@@ -393,12 +393,20 @@ function RenovaWorkspace({
             </button>
           </div>
         </aside>
+        <button
+          id="sidebarBackdrop"
+          className="sidebar-backdrop"
+          type="button"
+          aria-label="Close navigation"
+          tabIndex={-1}
+        />
         <main>
           <header className="topbar glass">
             <button
               id="mobileMenu"
               className="icon-button mobile-only"
               aria-label="Open menu"
+              aria-expanded={false}
             />
             <button id="searchButton" className="search-button">
               <span className="search-icon" />
