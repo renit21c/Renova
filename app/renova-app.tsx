@@ -375,6 +375,18 @@ function RenovaWorkspace({
               <path d="m14 6-6 6 6 6" />
             </svg>
           </button>
+          <button
+            id="mobileSidebarCollapse"
+            className="sidebar-mobile-collapse"
+            type="button"
+            aria-label="Close navigation menu"
+            title="Close navigation menu"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m14 6-6 6 6 6" />
+            </svg>
+            <span>Close menu</span>
+          </button>
           <nav id="nav" aria-label="Main navigation" />
           <div className="sidebar-footer">
             <button
