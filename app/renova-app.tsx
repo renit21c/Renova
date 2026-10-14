@@ -102,53 +102,122 @@ export default function RenovaApp({ googleCalendarEnabled }: RenovaAppProps) {
   if (!session) {
     return (
       <div className="auth-screen">
-        <section className="panel auth-card">
-          <div className="brand auth-brand">
-            <span className="brand-mark">R</span>
-            <span>Renova</span>
-          </div>
-          <h1>Selamat datang kembali</h1>
-          <p className="muted">
-            Masuk ke akun pribadimu untuk membuka workspace.
-          </p>
-          <form onSubmit={handleSignIn}>
-            <div className="field">
-              <label htmlFor="login-email">Email</label>
-              <input
-                id="login-email"
-                name="email"
-                type="email"
-                autoComplete="username"
-                required
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-              />
-            </div>
-            <div className="field">
-              <label htmlFor="login-password">Kata sandi</label>
-              <input
-                id="login-password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-              />
-            </div>
-            {authError && (
-              <p className="auth-error" role="alert">
-                {authError}
+        <div className="auth-orb auth-orb-one" aria-hidden="true" />
+        <div className="auth-orb auth-orb-two" aria-hidden="true" />
+        <main className="auth-layout">
+          <section className="auth-story">
+            <a className="auth-wordmark" href="/" aria-label="Renova home">
+              Renova<span>.</span>
+            </a>
+            <div className="auth-story-copy">
+              <span className="auth-kicker">
+                <span className="auth-kicker-dot" />
+                YOUR SPACE, IN SYNC
+              </span>
+              <h1>
+                Make room
+                <br />
+                for <span>what matters.</span>
+              </h1>
+              <p>
+                Satu ruang pribadi untuk menata hari, merawat tujuan, dan
+                melihat sejauh apa kamu sudah melangkah.
               </p>
-            )}
-            <button className="primary-button auth-submit" disabled={signingIn}>
-              {signingIn ? "Sedang masuk..." : "Masuk"}
-            </button>
-          </form>
-          <p className="muted auth-note">
-            Akses privat untuk pemilik workspace.
-          </p>
-        </section>
+            </div>
+            <div className="auth-art" aria-hidden="true">
+              <div className="auth-art-glow" />
+              <div className="auth-art-ring auth-art-ring-outer" />
+              <div className="auth-art-ring auth-art-ring-inner" />
+              <div className="auth-art-core">
+                <span>✳</span>
+              </div>
+              <div className="auth-float auth-float-focus">
+                <span className="auth-float-icon">✳</span>
+                <span>
+                  <b>Find your focus</b>
+                  <small>One step at a time</small>
+                </span>
+              </div>
+              <div className="auth-float auth-float-progress">
+                <span className="auth-progress-label">A little progress</span>
+                <span className="auth-progress-bars">
+                  <i />
+                  <i />
+                  <i />
+                  <i />
+                  <i />
+                  <i />
+                  <i />
+                </span>
+                <b>It all adds up.</b>
+              </div>
+            </div>
+            <span className="auth-story-footer">
+              A QUIETER WAY TO MOVE FORWARD
+            </span>
+          </section>
+          <section className="auth-form-side">
+            <div className="auth-form-wrap">
+              <span className="auth-mobile-wordmark">
+                Renova<span>.</span>
+              </span>
+              <span className="auth-kicker auth-form-kicker">
+                WELCOME BACK
+              </span>
+              <h2>Senang melihatmu lagi.</h2>
+              <p className="auth-form-intro">
+                Masuk ke ruang pribadimu dan lanjutkan dari tempat terakhir.
+              </p>
+              <form onSubmit={handleSignIn}>
+                <div className="field auth-field">
+                  <label htmlFor="login-email">EMAIL</label>
+                  <input
+                    id="login-email"
+                    name="email"
+                    type="email"
+                    autoComplete="username"
+                    placeholder="nama@email.com"
+                    required
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                  />
+                </div>
+                <div className="field auth-field">
+                  <label htmlFor="login-password">KATA SANDI</label>
+                  <input
+                    id="login-password"
+                    name="password"
+                    type="password"
+                    autoComplete="current-password"
+                    placeholder="Masukkan kata sandi"
+                    required
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                  />
+                </div>
+                {authError && (
+                  <p className="auth-error" role="alert">
+                    {authError}
+                  </p>
+                )}
+                <button
+                  className="primary-button auth-submit"
+                  disabled={signingIn}
+                >
+                  <span>{signingIn ? "Sedang masuk..." : "Masuk ke Renova"}</span>
+                  <span className="auth-submit-arrow" aria-hidden="true">
+                    →
+                  </span>
+                </button>
+              </form>
+              <div className="auth-private-note">
+                <span className="auth-lock" aria-hidden="true">●</span>
+                Workspace privat. Hanya kamu yang punya akses.
+              </div>
+            </div>
+            <span className="auth-form-footer">PERSONAL BY DESIGN</span>
+          </section>
+        </main>
       </div>
     );
   }
