@@ -199,6 +199,7 @@ function RenovaWorkspace({
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
   const [syncStatus, setSyncStatus] = useState("Menyiapkan sinkronisasi...");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -357,11 +358,23 @@ function RenovaWorkspace({
       )}
       <div className="ambient ambient-one" />
       <div className="ambient ambient-two" />
-      <div className="app-shell">
+      <div className={`app-shell${sidebarCollapsed ? " sidebar-collapsed" : ""}`}>
         <aside className="sidebar glass">
           <a className="brand" href="#home">
             <span>Renova</span>
           </a>
+          <button
+            className="icon-button sidebar-collapse"
+            type="button"
+            onClick={() => setSidebarCollapsed((collapsed) => !collapsed)}
+            aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-expanded={!sidebarCollapsed}
+            title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m14 6-6 6 6 6" />
+            </svg>
+          </button>
           <nav id="nav" aria-label="Main navigation" />
           <div className="sidebar-footer">
             <button
