@@ -1,8 +1,9 @@
-const STORE='renova-v1', LEGACY_STORE='life-os-v1';
+const userStorageId=window.RENOVA_CONFIG?.userId||'anonymous';
+const STORE=`renova-v1:${userStorageId}`, LEGACY_STORE=`life-os-v1:${userStorageId}`;
 const today=new Date(); const iso=value=>{let d=new Date(value);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}; const now=iso(today);
 const googleConfig=window.RENOVA_CONFIG||{};
-const googleSessionKey='renova-google-calendar-session';
-const googleEmailKey='renova-google-calendar-email';
+const googleSessionKey=`renova-google-calendar-session:${userStorageId}`;
+const googleEmailKey=`renova-google-calendar-email:${userStorageId}`;
 let googleEvents=[],googleCalendarFetchKey='',googleCalendarBusy=false,googleCalendarError='';
 let googleCalendarToken=sessionStorage.getItem(googleSessionKey)||'';
 const seed={profile:{name:'',nickname:'',birthDate:'',bio:'',timezone:'Asia/Jakarta',currency:'IDR'},theme:'light',tasks:[],events:[],accounts:[],transactions:[],goals:[],journal:[],projects:[],investments:[],focus:'',demo:false};

@@ -11,6 +11,7 @@ type RenovaAppProps = {
 type WorkspaceState = Record<string, unknown>;
 const STORE = "renova-v1";
 const LEGACY_STORE = "life-os-v1";
+const LOCAL_OWNER = "renova-local-owner-v1";
 
 declare global {
   interface Window {
@@ -18,6 +19,7 @@ declare global {
       supabaseUrl: string;
       supabaseAnonKey: string;
       googleCalendarEnabled: boolean;
+      userId: string;
     };
   }
 }
@@ -207,6 +209,7 @@ function RenovaWorkspace({
     let saveQueue = Promise.resolve();
 
     async function loadWorkspace() {
+      const userStore = `${STORE}:${session.user.id}`;
       const { data, error: loadError } = await supabase
         .from("renova_workspace")
         .select("state")
@@ -224,10 +227,27 @@ function RenovaWorkspace({
             "Data workspace Supabase tidak memiliki format yang valid.",
           );
         }
-        localStorage.setItem(STORE, JSON.stringify(data.state));
+        localStorage.setItem(userStore, JSON.stringify(data.state));
+        if (
+          !localStorage.getItem(LOCAL_OWNER) &&
+          (localStorage.getItem(STORE) || localStorage.getItem(LEGACY_STORE))
+        ) {
+          localStorage.setItem(LOCAL_OWNER, session.user.id);
+        }
       } else {
-        const localState =
-          localStorage.getItem(STORE) ?? localStorage.getItem(LEGACY_STORE);
+        let localState = localStorage.getItem(userStore);
+        if (!localState) {
+          const localOwner = localStorage.getItem(LOCAL_OWNER);
+          if (!localOwner || localOwner === session.user.id) {
+            localState =
+              localStorage.getItem(STORE) ??
+              localStorage.getItem(LEGACY_STORE);
+            if (localState) {
+              localStorage.setItem(userStore, localState);
+              localStorage.setItem(LOCAL_OWNER, session.user.id);
+            }
+          }
+        }
         if (localState) {
           const parsed: unknown = JSON.parse(localState);
           if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
@@ -243,6 +263,7 @@ function RenovaWorkspace({
         supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
         supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
         googleCalendarEnabled,
+        userId: session.user.id,
       };
 
       const onSave = (event: Event) => {
