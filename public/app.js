@@ -76,3 +76,213 @@ function openFocus(){modal(`<h2>Personal focus</h2><form onsubmit="state.focus=n
 function search(){modal(`<h2>Search Renova</h2><div class="field"><input autofocus id="globalSearch" oninput="searchNow()" placeholder="Tasks, events, goals, projects…"></div><div id="searchResults" class="empty">Start typing to search your private records.</div>`);setTimeout(()=>document.querySelector('#globalSearch')?.focus(),20)}function searchNow(){let q=document.querySelector('#globalSearch').value.toLowerCase();let data=[...state.tasks.map(x=>['Task',x.title]),...state.events.map(x=>['Event',x.title]),...state.goals.map(x=>['Goal',x.title]),...state.journal.map(x=>['Journal',x.title||x.body]),...state.projects.map(x=>['Project',x.name]),...state.investments.map(x=>['Investment',x.name])].filter(x=>String(x[1]||'').toLowerCase().includes(q));document.querySelector('#searchResults').innerHTML=q?(data.length?data.map(x=>`<div class="list-row"><span class="status">${x[0]}</span><b>${esc(x[1])}</b></div>`).join(''):'<div class="empty">No matches.</div>'):'<div class="empty">Start typing to search your private records.</div>'}
 function setMobileSidebar(open){let sidebar=document.querySelector('.sidebar'),menu=document.querySelector('#mobileMenu'),backdrop=document.querySelector('#sidebarBackdrop');sidebar.classList.toggle('open',open);backdrop.classList.toggle('visible',open);menu.setAttribute('aria-expanded',String(open));menu.setAttribute('aria-label',open?'Close menu':'Open menu')}
 document.querySelector('#quickButton').onclick=openQuick;document.querySelector('#searchButton').onclick=search;document.querySelector('#themeButton').onclick=toggleTheme;document.querySelector('#settingsButton').onclick=()=>setRoute('settings');document.querySelector('#mobileMenu').onclick=()=>setMobileSidebar(!document.querySelector('.sidebar').classList.contains('open'));document.querySelector('#mobileSidebarCollapse').onclick=()=>setMobileSidebar(false);document.querySelector('#sidebarBackdrop').onclick=()=>setMobileSidebar(false);document.querySelector('#nav').addEventListener('click',e=>{if(e.target.closest('.nav-link'))setMobileSidebar(false)});window.addEventListener('hashchange',()=>{route=location.hash.slice(1)||'home';render()});document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();search()}if(e.key==='Escape'){closeModal();setMobileSidebar(false)}});render();completeGoogleOAuth();save();
+
+let pendingTaskProject = null;
+const financeCategories = [
+  'Food & groceries',
+  'Transport',
+  'Housing',
+  'Utilities',
+  'Shopping',
+  'Health',
+  'Education',
+  'Entertainment',
+  'Personal care',
+  'Travel',
+  'Salary',
+  'Freelance',
+  'Business',
+  'Investment',
+  'Gifts',
+  'Other',
+];
+
+function closeModal() {
+  pendingTaskProject = null;
+  document.querySelector('#modalRoot').innerHTML = '';
+}
+
+function openTask(id = '', draft = {}) {
+  const task = state.tasks.find((item) => item.id === id) || {};
+  const values = { ...task, ...draft };
+  const projects = state.projects
+    .map((project) => project.name)
+    .filter(Boolean);
+  if (values.project && !projects.includes(values.project)) {
+    projects.push(values.project);
+  }
+
+  modal(
+    `<h2>${id ? 'Edit' : 'New'} task</h2><form id="taskForm" onsubmit="saveTask(event,'${id}')"><div class="form-grid"><div class="field full"><label>Task</label><input required name="title" value="${esc(values.title)}" placeholder="What needs your attention?"></div><div class="field"><label>Due date</label><input type="date" name="due" value="${values.due || ''}"></div><div class="field"><label>Priority</label><select name="priority">${['Low', 'Medium', 'High'].map((item) => `<option ${values.priority === item ? 'selected' : ''}>${item}</option>`).join('')}</select></div><div class="field"><label>Status</label><select name="status">${['Inbox', 'To do', 'In progress', 'Completed'].map((item) => `<option ${values.status === item ? 'selected' : ''}>${item}</option>`).join('')}</select></div><div class="field full"><label>Project</label><div class="project-select-row"><select name="project"><option value="">No project</option>${projects.map((name) => `<option value="${esc(name)}" ${values.project === name ? 'selected' : ''}>${esc(name)}</option>`).join('')}</select><button type="button" class="secondary-button" onclick="createProjectFromTask('${id}')">＋ New project</button></div></div></div><div class="modal-actions"><button type="button" class="secondary-button" onclick="closeModal()">Cancel</button><button class="primary-button">Save task</button></div></form>`,
+  );
+}
+
+function createProjectFromTask(id) {
+  const form = document.querySelector('#taskForm');
+  if (!(form instanceof HTMLFormElement)) {
+    throw new Error('Task form is not available.');
+  }
+  pendingTaskProject = {
+    id,
+    values: Object.fromEntries(new FormData(form)),
+  };
+  openProject();
+}
+
+function cancelTaskProjectCreation() {
+  const pending = pendingTaskProject;
+  pendingTaskProject = null;
+  if (pending) openTask(pending.id, pending.values);
+  else closeModal();
+}
+
+function saveTask(event, id) {
+  event.preventDefault();
+  const values = Object.fromEntries(new FormData(event.target));
+  const old = state.tasks.find((task) => task.id === id);
+  const task = {
+    ...old,
+    ...values,
+    id: id || crypto.randomUUID(),
+    completed: values.status === 'Completed' ? now : old?.completed,
+  };
+  if (old) Object.assign(old, task);
+  else state.tasks.push(task);
+  save();
+  closeModal();
+  render();
+  toast('Task saved');
+}
+
+function saveProject(event, id) {
+  event.preventDefault();
+  const value = {
+    ...Object.fromEntries(new FormData(event.target)),
+    id: id || crypto.randomUUID(),
+  };
+  const old = state.projects.find((project) => project.id === id);
+  if (old && old.name !== value.name) {
+    state.tasks.forEach((task) => {
+      if (task.project === old.name) task.project = value.name;
+    });
+  }
+  if (old) Object.assign(old, value);
+  else state.projects.push(value);
+  save();
+
+  if (pendingTaskProject) {
+    const pending = pendingTaskProject;
+    pendingTaskProject = null;
+    pending.values.project = value.name;
+    openTask(pending.id, pending.values);
+    toast('Project saved');
+    return;
+  }
+
+  closeModal();
+  render();
+  toast('Project saved');
+}
+
+function formatRupiahInput(input) {
+  const digits = input.value.replace(/\D/g, '');
+  input.value = digits ? new Intl.NumberFormat('id-ID').format(Number(digits)) : '';
+}
+
+function parseRupiahInput(value) {
+  const digits = String(value).replace(/\D/g, '');
+  return digits ? Number(digits) : 0;
+}
+
+function spendingByCategory() {
+  const month = now.slice(0, 7);
+  const totals = new Map();
+  state.transactions
+    .filter((transaction) =>
+      transaction.type === 'Expense' && transaction.date?.startsWith(month),
+    )
+    .forEach((transaction) => {
+      const category = transaction.category || 'Uncategorized';
+      totals.set(category, (totals.get(category) || 0) + Number(transaction.amount || 0));
+    });
+
+  const entries = [...totals.entries()].sort((a, b) => b[1] - a[1]);
+  const total = entries.reduce((sum, [, amount]) => sum + amount, 0);
+  if (!total) return '<div class="empty">No expenses recorded this month.</div>';
+
+  const colors = ['#007aff', '#30a46c', '#e69b16', '#e5484d', '#8e5ad7', '#14a8a1', '#f07835', '#718096'];
+  let offset = 0;
+  const gradient = entries.map(([, amount], index) => {
+    const start = offset;
+    offset += amount / total * 100;
+    return `${colors[index % colors.length]} ${start}% ${offset}%`;
+  }).join(', ');
+  return `<div class="donut-layout"><div class="donut-chart" role="img" aria-label="Spending by category this month" style="background:conic-gradient(${gradient})"><div class="donut-center"><span>This month</span><strong>${money(total)}</strong></div></div><div class="donut-legend">${entries.map(([category, amount], index) => `<div class="donut-legend-row"><span class="donut-swatch" style="background:${colors[index % colors.length]}"></span><span class="donut-category">${esc(category)}</span><b>${money(amount)}</b></div>`).join('')}</div></div>`;
+}
+
+function finance() {
+  const totals = monthTotals();
+  const transactions = state.transactions
+    .slice()
+    .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+  return heading(
+    'Finance',
+    'A clear record of what you’ve chosen to track.',
+    '<button class="primary-button" onclick="openTransaction()">＋ Record transaction</button>',
+  ) + `<div class="dashboard-grid"><div class="section-stack"><section class="panel"><div class="snapshot"><div class="metric"><div class="value">${money(balance())}</div><div class="label">Recorded balance</div></div><div class="metric"><div class="value income">${money(totals.income)}</div><div class="label">Income this month</div></div><div class="metric"><div class="value expense">${money(totals.expense)}</div><div class="label">Expenses this month</div></div><div class="metric"><div class="value">${money(totals.income - totals.expense)}</div><div class="label">Net cash flow</div></div></div></section><section class="panel"><div class="panel-title"><h2>Recent transactions</h2></div>${transactions.map((transaction) => `<div class="list-row finance-transaction"><div class="event-info"><b>${esc(transaction.description || transaction.category || transaction.type)}</b><small>${esc(transaction.date || '')} · ${esc(transaction.category || 'Uncategorized')}</small></div><span class="amount ${transaction.type === 'Income' ? 'income' : 'expense'}">${transaction.type === 'Income' ? '+' : '−'}${money(transaction.amount)}</span><button class="text-button danger-button" onclick="deleteTransaction('${transaction.id}')">Delete</button></div>`).join('') || '<div class="empty">No transactions recorded. Add one to begin.</div>'}</section></div><div class="section-stack"><section class="panel"><div class="panel-title"><h2>Accounts</h2><button class="text-button" onclick="openAccount()">Add</button></div>${state.accounts.map((account) => `<div class="list-row"><div class="event-info"><b>${esc(account.name)}</b><small>${esc(account.type || 'Account')}</small></div><span class="amount">${money(account.initial)}</span></div>`).join('') || '<div class="empty">Add your first account.</div>'}</section><section class="panel"><div class="panel-title"><h2>Spending by category</h2></div>${spendingByCategory()}</section><section class="panel"><div class="panel-title"><h2>Spending trend</h2></div>${spendingTrend()}</section></div></div>`;
+}
+
+function openTransaction() {
+  modal(
+    `<h2>Record transaction</h2><form onsubmit="saveTransaction(event)"><div class="form-grid"><div class="field"><label>Type</label><select name="type"><option>Expense</option><option>Income</option></select></div><div class="field"><label>Amount</label><div class="currency-input"><span>Rp</span><input name="amount" type="text" inputmode="numeric" autocomplete="off" required placeholder="0" oninput="formatRupiahInput(this)"></div></div><div class="field"><label>Date</label><input name="date" type="date" value="${now}" required></div><div class="field"><label>Category</label><select name="category"><option value="">Choose a category</option>${financeCategories.map((category) => `<option>${category}</option>`).join('')}</select></div><div class="field full"><label>Description</label><input name="description" placeholder="What was this for?"></div></div><div class="modal-actions"><button type="button" class="secondary-button" onclick="closeModal()">Cancel</button><button class="primary-button">Save transaction</button></div></form>`,
+  );
+}
+
+function saveTransaction(event) {
+  event.preventDefault();
+  const values = Object.fromEntries(new FormData(event.target));
+  state.transactions.push({
+    ...values,
+    amount: parseRupiahInput(values.amount),
+    id: crypto.randomUUID(),
+  });
+  save();
+  closeModal();
+  render();
+  toast('Transaction recorded');
+}
+
+function deleteTransaction(id) {
+  if (!confirm('Delete this transaction?')) return;
+  state.transactions = state.transactions.filter((transaction) => transaction.id !== id);
+  save();
+  render();
+  toast('Transaction deleted');
+}
+
+function openAccount() {
+  modal(
+    `<h2>Add account</h2><form onsubmit="saveAccount(event)"><div class="form-grid"><div class="field"><label>Name</label><input name="name" required placeholder="Bank account"></div><div class="field"><label>Type</label><input name="type" placeholder="Cash, bank, e-wallet"></div><div class="field full"><label>Initial balance</label><div class="currency-input"><span>Rp</span><input name="initial" type="text" inputmode="numeric" autocomplete="off" value="0" required oninput="formatRupiahInput(this)"></div></div></div><div class="modal-actions"><button type="button" class="secondary-button" onclick="closeModal()">Cancel</button><button class="primary-button">Add account</button></div></form>`,
+  );
+}
+
+function saveAccount(event) {
+  event.preventDefault();
+  const values = Object.fromEntries(new FormData(event.target));
+  state.accounts.push({
+    ...values,
+    initial: parseRupiahInput(values.initial),
+    id: crypto.randomUUID(),
+  });
+  save();
+  closeModal();
+  render();
+  toast('Account added');
+}
+
+function openProject(id = '') {
+  const project = state.projects.find((item) => item.id === id) || {};
+  modal(
+    `<h2>${id ? 'Edit' : 'New'} project</h2><form onsubmit="saveProject(event,'${id}')"><div class="form-grid"><div class="field full"><label>Project name</label><input name="name" required value="${esc(project.name)}" placeholder="What are you moving forward?"></div><div class="field"><label>Status</label><select name="status">${['Active', 'On hold', 'Completed'].map((status) => `<option ${project.status === status ? 'selected' : ''}>${status}</option>`).join('')}</select></div><div class="field"><label>Target date</label><input name="targetDate" type="date" value="${project.targetDate || ''}"></div><div class="field full"><label>Description</label><textarea name="description">${esc(project.description)}</textarea></div></div><div class="modal-actions">${id ? `<button type="button" class="text-button danger-button" onclick="deleteProject('${id}')">Delete</button>` : ''}<button type="button" class="secondary-button" onclick="cancelTaskProjectCreation()">Cancel</button><button class="primary-button">Save project</button></div></form>`,
+  );
+}
