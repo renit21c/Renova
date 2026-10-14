@@ -340,3 +340,203 @@ document.addEventListener('click', (event) => {
     target.showPicker();
   }
 });
+
+function taskStatusBadge(status = 'Inbox') {
+  const className = String(status).toLowerCase().replaceAll(' ', '-');
+  return `<span class="task-status task-status-${className}">${esc(status)}</span>`;
+}
+
+function taskRows(tasks) {
+  return tasks.length
+    ? tasks.map((task) => `<div class="task-row"><input class="check" type="checkbox" ${task.status === 'Completed' ? 'checked' : ''} onchange="toggleTask('${task.id}')"><div class="task-copy"><b>${esc(task.title)}</b><small>${task.due ? new Date(`${task.due}T12:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'No due date'}${task.project ? ` · ${esc(task.project)}` : ''}</small></div>${taskStatusBadge(task.status)}<span class="priority ${task.priority === 'High' ? 'high' : task.priority === 'Low' ? 'low' : ''}">${esc(task.priority || 'Medium')}</span><button class="text-button" onclick="editTask('${task.id}')">Edit</button></div>`).join('')
+    : '<div class="empty">Nothing here yet. A little breathing room is good.</div>';
+}
+
+function taskTimeline(tasks) {
+  const ordered = tasks.slice().sort((a, b) => {
+    if (!a.due) return b.due ? 1 : a.title.localeCompare(b.title);
+    if (!b.due) return -1;
+    return a.due.localeCompare(b.due) || a.title.localeCompare(b.title);
+  });
+  return ordered.length
+    ? `<div class="task-timeline">${ordered.map((task) => `<article class="timeline-item ${task.due && task.due < now && task.status !== 'Completed' ? 'timeline-overdue' : ''}"><time datetime="${esc(task.due || '')}">${task.due ? new Date(`${task.due}T12:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'No due date'}</time><div class="timeline-task"><div><b>${esc(task.title)}</b><small>${task.project ? `${esc(task.project)} · ` : ''}${esc(task.priority || 'Medium')} priority</small></div>${taskStatusBadge(task.status)}<button class="text-button" onclick="editTask('${task.id}')">Edit</button></div></article>`).join('')}</div>`
+    : '<div class="empty">No tasks to show in the timeline.</div>';
+}
+
+function tasks() {
+  const activeTasks = state.tasks.filter((task) => task.status !== 'Archived');
+  const projects = [...new Set(state.projects.map((project) => project.name).filter(Boolean))];
+  return heading(
+    'Tasks',
+    'Plan, prioritize, and follow your tasks by project and status.',
+    '<button class="primary-button" onclick="openTask()">＋ New task</button>',
+  ) + `<div class="section-stack"><section class="panel"><div class="toolbar task-filters"><input id="taskSearch" oninput="filterTasks()" placeholder="Search tasks"><select id="taskFilter" onchange="filterTasks()"><option value="all">Any due date</option><option value="today">Due today</option><option value="overdue">Overdue</option></select><select id="taskProjectFilter" onchange="filterTasks()"><option value="all">All projects</option><option value="none">No project</option>${projects.map((project) => `<option value="${esc(project)}">${esc(project)}</option>`).join('')}</select><select id="taskPriorityFilter" onchange="filterTasks()"><option value="all">Any urgency</option><option>High</option><option>Medium</option><option>Low</option></select><select id="taskStatusFilter" onchange="filterTasks()"><option value="active">All active states</option>${['Inbox', 'To do', 'In progress', 'Completed', 'Archived'].map((status) => `<option>${status}</option>`).join('')}</select></div><div class="panel-title task-list-title"><h2>Task list</h2><span id="taskResultCount" class="muted">${activeTasks.length} tasks</span></div><div id="taskList">${taskRows(activeTasks)}</div></section><section class="panel"><div class="panel-title"><h2>Task timeline</h2><span class="muted">Ordered by due date</span></div><div id="taskTimeline">${taskTimeline(activeTasks)}</div></section><div class="content-grid"><section class="panel"><div class="panel-title"><h2>At a glance</h2></div><div class="snapshot"><div class="metric"><div class="value">${activeTasks.length}</div><div class="label">Active tasks</div></div><div class="metric"><div class="value">${activeTasks.filter((task) => task.priority === 'High').length}</div><div class="label">High urgency</div></div><div class="metric"><div class="value">${activeTasks.filter((task) => task.due && task.due < now && task.status !== 'Completed').length}</div><div class="label">Overdue tasks</div></div><div class="metric"><div class="value">${activeTasks.filter((task) => task.status === 'Completed').length}</div><div class="label">Completed</div></div></div></section><aside class="panel"><div class="panel-title"><h2>Google Calendar</h2></div><p class="muted">${googleCalendarToken ? 'Tasks with a due date can be added to your connected calendar.' : 'Connect Google Calendar to add task due dates to your calendar.'}</p>${googleCalendarToken ? '' : '<button class="secondary-button" onclick="setRoute(\'calendar\')">Open calendar settings</button>'}</aside></div></div>`;
+}
+
+function filterTasks() {
+  const query = document.querySelector('#taskSearch')?.value.trim().toLowerCase() || '';
+  const dateFilter = document.querySelector('#taskFilter')?.value || 'all';
+  const projectFilter = document.querySelector('#taskProjectFilter')?.value || 'all';
+  const priorityFilter = document.querySelector('#taskPriorityFilter')?.value || 'all';
+  const statusFilter = document.querySelector('#taskStatusFilter')?.value || 'active';
+  let filtered = state.tasks.filter((task) => {
+    const statusMatches = statusFilter === 'active'
+      ? task.status !== 'Archived'
+      : task.status === statusFilter;
+    const dateMatches = dateFilter === 'today'
+      ? task.due === now
+      : dateFilter === 'overdue'
+        ? Boolean(task.due && task.due < now && task.status !== 'Completed')
+        : true;
+    const projectMatches = projectFilter === 'all'
+      ? true
+      : projectFilter === 'none'
+        ? !task.project
+        : task.project === projectFilter;
+    return statusMatches &&
+      dateMatches &&
+      projectMatches &&
+      (priorityFilter === 'all' || task.priority === priorityFilter) &&
+      String(task.title || '').toLowerCase().includes(query);
+  });
+  const list = document.querySelector('#taskList');
+  const timeline = document.querySelector('#taskTimeline');
+  if (list) list.innerHTML = taskRows(filtered);
+  if (timeline) timeline.innerHTML = taskTimeline(filtered);
+  const count = document.querySelector('#taskResultCount');
+  if (count) count.textContent = `${filtered.length} ${filtered.length === 1 ? 'task' : 'tasks'}`;
+}
+
+function projects() {
+  return heading(
+    'Projects',
+    'Open a project to see its linked tasks and progress.',
+    '<button class="primary-button" onclick="openProject()">＋ New project</button>',
+  ) + `<section class="panel">${state.projects.map((project) => {
+    const tasks = state.tasks.filter((task) => task.project === project.name);
+    const done = tasks.filter((task) => task.status === 'Completed').length;
+    const percent = tasks.length ? Math.round(done / tasks.length * 100) : 0;
+    return `<article class="goal-card"><div class="panel-title"><div><h2>${esc(project.name)}</h2><small class="muted">${esc(project.status || 'Active')}${project.targetDate ? ` · Target ${esc(project.targetDate)}` : ''}</small></div><button class="text-button" onclick="openProject('${project.id}')">Edit project</button></div><div class="muted">${esc(project.description || 'No description yet.')}</div><div class="progress"><span style="width:${percent}%"></span></div><small class="project-progress-label"><span>${tasks.length} linked tasks</span><span>${percent}% complete</span></small><details class="project-task-details"><summary>View project tasks (${tasks.length})</summary><div>${tasks.length ? taskRows(tasks) : '<div class="empty">No tasks linked to this project yet.</div>'}</div><button class="secondary-button" onclick="openProjectTask('${project.id}')">＋ Add task to project</button></details></article>`;
+  }).join('') || '<div class="empty">Create a project, then link tasks to see them here.</div>'}</section>`;
+}
+
+function openProjectTask(projectId) {
+  const project = state.projects.find((item) => item.id === projectId);
+  if (!project) {
+    toast('This project could not be found.');
+    return;
+  }
+  openTask('', { project: project.name });
+}
+
+function openTask(id = '', draft = {}) {
+  const task = state.tasks.find((item) => item.id === id) || {};
+  const values = { ...task, ...draft };
+  const projects = state.projects.map((project) => project.name).filter(Boolean);
+  if (values.project && !projects.includes(values.project)) projects.push(values.project);
+  const hasGoogleLink = Boolean(values.calendarEventId);
+  const calendarOption = googleCalendarToken
+    ? `<label class="task-calendar-option"><input type="checkbox" name="syncToGoogle" value="yes" ${hasGoogleLink || values.syncToGoogle === 'yes' ? 'checked' : ''} ${hasGoogleLink ? 'disabled' : ''}><span><b>Sync due date to Google Calendar</b><small>${hasGoogleLink ? 'Already linked; task changes will keep syncing.' : 'Creates or updates an all-day calendar event.'}</small></span></label>${hasGoogleLink ? `<input type="hidden" name="syncToGoogle" value="yes">` : ''}`
+    : `<p class="muted task-calendar-note">To add this task to Google Calendar, connect your account from the <button type="button" class="text-button" onclick="closeModal();setRoute('calendar')">Calendar page</button>.</p>`;
+  modal(
+    `<h2>${id ? 'Edit' : 'New'} task</h2><form id="taskForm" onsubmit="saveTask(event,'${id}')"><div class="form-grid"><div class="field full"><label>Task</label><input required name="title" value="${esc(values.title)}" placeholder="What needs your attention?"></div><div class="field"><label>Due date</label><input type="date" name="due" value="${values.due || ''}"></div><div class="field"><label>Priority / urgency</label><select name="priority">${['Low', 'Medium', 'High'].map((priority) => `<option ${values.priority === priority ? 'selected' : ''}>${priority}</option>`).join('')}</select></div><div class="field"><label>Status</label><select name="status">${['Inbox', 'To do', 'In progress', 'Completed', 'Archived'].map((status) => `<option ${values.status === status ? 'selected' : ''}>${status}</option>`).join('')}</select></div><div class="field full"><label>Project</label><div class="project-select-row"><select name="project"><option value="">No project</option>${projects.map((name) => `<option value="${esc(name)}" ${values.project === name ? 'selected' : ''}>${esc(name)}</option>`).join('')}</select><button type="button" class="secondary-button" onclick="createProjectFromTask('${id}')">＋ New project</button></div></div><div class="field full">${calendarOption}</div></div><div class="modal-actions"><button type="button" class="secondary-button" onclick="closeModal()">Cancel</button><button class="primary-button">Save task</button></div></form>`,
+  );
+}
+
+async function saveTask(event, id) {
+  event.preventDefault();
+  const values = Object.fromEntries(new FormData(event.target));
+  const { syncToGoogle, ...taskValues } = values;
+  if (syncToGoogle === 'yes' && !taskValues.due) {
+    toast('Add a due date before syncing this task to Google Calendar.');
+    return;
+  }
+  const old = state.tasks.find((task) => task.id === id);
+  const task = {
+    ...old,
+    ...taskValues,
+    id: id || crypto.randomUUID(),
+    completed: taskValues.status === 'Completed' ? now : old?.completed,
+  };
+  if (old) Object.assign(old, task);
+  else state.tasks.push(task);
+  save();
+  closeModal();
+  render();
+
+  if (syncToGoogle === 'yes') {
+    try {
+      const description = [
+        `Status: ${task.status || 'Inbox'}`,
+        `Priority: ${task.priority || 'Medium'}`,
+        task.project ? `Project: ${task.project}` : '',
+      ].filter(Boolean).join('\n');
+      const payload = googleEventPayload(
+        {
+          title: `Task: ${task.title}`,
+          date: task.due,
+          description,
+        },
+        null,
+      );
+      const linkedEvent = await googleCalendarRequest(
+        task.calendarEventId ? 'event' : 'events',
+        {
+          method: task.calendarEventId ? 'PATCH' : 'POST',
+          body: JSON.stringify(payload),
+        },
+        true,
+        task.calendarEventId ? `id=${encodeURIComponent(task.calendarEventId)}` : '',
+      );
+      if (!linkedEvent.id) throw new Error('Google Calendar returned no event ID.');
+      task.calendarEventId = linkedEvent.id;
+      save();
+      googleCalendarFetchKey = '';
+      toast('Task saved and synced to Google Calendar');
+    } catch (error) {
+      console.error('Task Google Calendar sync failed:', error);
+      toast(`Task saved, but Google Calendar sync failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+    return;
+  }
+
+  toast(id ? 'Task updated' : 'Task saved');
+}
+
+async function toggleTask(id) {
+  const task = state.tasks.find((item) => item.id === id);
+  if (!task) {
+    toast('This task could not be found.');
+    return;
+  }
+  task.status = task.status === 'Completed' ? 'To do' : 'Completed';
+  task.completed = task.status === 'Completed' ? now : '';
+  save();
+  render();
+
+  if (task.calendarEventId && googleCalendarToken) {
+    try {
+      const description = [
+        `Status: ${task.status}`,
+        `Priority: ${task.priority || 'Medium'}`,
+        task.project ? `Project: ${task.project}` : '',
+      ].filter(Boolean).join('\n');
+      const payload = googleEventPayload(
+        { title: `Task: ${task.title}`, date: task.due, description },
+        null,
+      );
+      await googleCalendarRequest(
+        'event',
+        { method: 'PATCH', body: JSON.stringify(payload) },
+        true,
+        `id=${encodeURIComponent(task.calendarEventId)}`,
+      );
+      googleCalendarFetchKey = '';
+    } catch (error) {
+      console.error('Task Google Calendar status sync failed:', error);
+      toast(`Task status changed, but Google Calendar sync failed: ${error instanceof Error ? error.message : String(error)}`);
+      return;
+    }
+  }
+  toast(task.status === 'Completed' ? 'Task completed' : 'Task reopened');
+}
