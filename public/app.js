@@ -417,7 +417,7 @@ function projects() {
     const tasks = state.tasks.filter((task) => task.project === project.name);
     const done = tasks.filter((task) => task.status === 'Completed').length;
     const percent = tasks.length ? Math.round(done / tasks.length * 100) : 0;
-    return `<article class="goal-card"><div class="panel-title"><div><h2>${esc(project.name)}</h2><small class="muted">${esc(project.status || 'Active')}${project.targetDate ? ` · Target ${esc(project.targetDate)}` : ''}</small></div><button class="text-button" onclick="openProject('${project.id}')">Edit project</button></div><div class="muted">${esc(project.description || 'No description yet.')}</div><div class="progress"><span style="width:${percent}%"></span></div><small class="project-progress-label"><span>${tasks.length} linked tasks</span><span>${percent}% complete</span></small><details class="project-task-details"><summary>View project tasks (${tasks.length})</summary><div>${tasks.length ? taskRows(tasks) : '<div class="empty">No tasks linked to this project yet.</div>'}</div><button class="secondary-button" onclick="openProjectTask('${project.id}')">＋ Add task to project</button></details></article>`;
+    return `<article class="goal-card"><div class="panel-title"><div><h2>${esc(project.name)}</h2><small class="muted">${esc(project.status || 'Active')}${project.targetDate ? ` · Target ${esc(project.targetDate)}` : ''}</small></div><div class="project-actions"><button class="text-button" onclick="openProject('${project.id}')">Edit project</button><button class="text-button danger-button" onclick="deleteProject('${project.id}')">Delete</button></div></div><div class="muted">${esc(project.description || 'No description yet.')}</div><div class="progress"><span style="width:${percent}%"></span></div><small class="project-progress-label"><span>${tasks.length} linked tasks</span><span>${percent}% complete</span></small><details class="project-task-details"><summary>View project tasks (${tasks.length})</summary><div>${tasks.length ? taskRows(tasks) : '<div class="empty">No tasks linked to this project yet.</div>'}</div><button class="secondary-button" onclick="openProjectTask('${project.id}')">＋ Add task to project</button></details></article>`;
   }).join('') || '<div class="empty">Create a project, then link tasks to see them here.</div>'}</section>`;
 }
 
@@ -440,7 +440,7 @@ function openTask(id = '', draft = {}) {
     ? `<label class="task-calendar-option"><input type="checkbox" name="syncToGoogle" value="yes" ${hasGoogleLink || values.syncToGoogle === 'yes' ? 'checked' : ''} ${hasGoogleLink ? 'disabled' : ''}><span><b>Sync due date to Google Calendar</b><small>${hasGoogleLink ? 'Already linked; task changes will keep syncing.' : 'Creates or updates an all-day calendar event.'}</small></span></label>${hasGoogleLink ? `<input type="hidden" name="syncToGoogle" value="yes">` : ''}`
     : `<p class="muted task-calendar-note">To add this task to Google Calendar, connect your account from the <button type="button" class="text-button" onclick="closeModal();setRoute('calendar')">Calendar page</button>.</p>`;
   modal(
-    `<h2>${id ? 'Edit' : 'New'} task</h2><form id="taskForm" onsubmit="saveTask(event,'${id}')"><div class="form-grid"><div class="field full"><label>Task</label><input required name="title" value="${esc(values.title)}" placeholder="What needs your attention?"></div><div class="field"><label>Due date</label><input type="date" name="due" value="${values.due || ''}"></div><div class="field"><label>Priority / urgency</label><select name="priority">${['Low', 'Medium', 'High'].map((priority) => `<option ${values.priority === priority ? 'selected' : ''}>${priority}</option>`).join('')}</select></div><div class="field"><label>Status</label><select name="status">${['Inbox', 'To do', 'In progress', 'Completed', 'Archived'].map((status) => `<option ${values.status === status ? 'selected' : ''}>${status}</option>`).join('')}</select></div><div class="field full"><label>Project</label><div class="project-select-row"><select name="project"><option value="">No project</option>${projects.map((name) => `<option value="${esc(name)}" ${values.project === name ? 'selected' : ''}>${esc(name)}</option>`).join('')}</select><button type="button" class="secondary-button" onclick="createProjectFromTask('${id}')">＋ New project</button></div></div><div class="field full">${calendarOption}</div></div><div class="modal-actions"><button type="button" class="secondary-button" onclick="closeModal()">Cancel</button><button class="primary-button">Save task</button></div></form>`,
+    `<h2>${id ? 'Edit' : 'New'} task</h2><form id="taskForm" onsubmit="saveTask(event,'${id}')"><div class="form-grid"><div class="field full"><label>Task</label><input required name="title" value="${esc(values.title)}" placeholder="What needs your attention?"></div><div class="field"><label>Due date</label><input type="date" name="due" value="${values.due || ''}"></div><div class="field"><label>Priority / urgency</label><select name="priority">${['Low', 'Medium', 'High'].map((priority) => `<option ${values.priority === priority ? 'selected' : ''}>${priority}</option>`).join('')}</select></div><div class="field"><label>Status</label><select name="status">${['Inbox', 'To do', 'In progress', 'Completed', 'Archived'].map((status) => `<option ${values.status === status ? 'selected' : ''}>${status}</option>`).join('')}</select></div><div class="field full"><label>Project</label><div class="project-select-row"><select name="project"><option value="">No project</option>${projects.map((name) => `<option value="${esc(name)}" ${values.project === name ? 'selected' : ''}>${esc(name)}</option>`).join('')}</select><button type="button" class="secondary-button" onclick="createProjectFromTask('${id}')">＋ New project</button></div></div><div class="field full">${calendarOption}</div></div><div class="modal-actions">${id ? `<button type="button" class="text-button danger-button" onclick="deleteTask('${id}')">Delete task</button>` : ''}<button type="button" class="secondary-button" onclick="closeModal()">Cancel</button><button class="primary-button">Save task</button></div></form>`,
   );
 }
 
@@ -540,4 +540,42 @@ async function toggleTask(id) {
     }
   }
   toast(task.status === 'Completed' ? 'Task completed' : 'Task reopened');
+}
+
+async function deleteTask(id) {
+  const task = state.tasks.find((item) => item.id === id);
+  if (!task) {
+    toast('This task could not be found.');
+    return;
+  }
+
+  const hasCalendarEvent = Boolean(task.calendarEventId);
+  const message = hasCalendarEvent && googleCalendarToken
+    ? 'Delete this task and its linked Google Calendar event?'
+    : hasCalendarEvent
+      ? 'Delete this task? Its linked event will remain in Google Calendar because the calendar is disconnected.'
+      : 'Delete this task? This cannot be undone.';
+  if (!confirm(message)) return;
+
+  if (hasCalendarEvent && googleCalendarToken) {
+    try {
+      await googleCalendarRequest(
+        'event',
+        { method: 'DELETE' },
+        true,
+        `id=${encodeURIComponent(task.calendarEventId)}`,
+      );
+      googleCalendarFetchKey = '';
+    } catch (error) {
+      console.error('Task Google Calendar event deletion failed:', error);
+      toast(`Task was not deleted: ${error instanceof Error ? error.message : String(error)}`);
+      return;
+    }
+  }
+
+  state.tasks = state.tasks.filter((item) => item.id !== id);
+  save();
+  closeModal();
+  render();
+  toast('Task deleted');
 }
