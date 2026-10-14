@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f5f5f7" />
+    <title>Renova</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
+    <div class="app-shell">
+      <aside class="sidebar glass">
+        <a class="brand" href="#home"><span class="brand-mark">R</span><span>Renova</span></a>
+        <nav id="nav" aria-label="Main navigation"></nav>
+        <div class="sidebar-footer"><button id="themeButton" class="icon-button" title="Toggle appearance" aria-label="Toggle appearance"></button><button id="settingsButton" class="avatar" title="Settings" aria-label="Settings">?</button></div>
+      </aside>
+      <main>
+        <header class="topbar glass"><button id="mobileMenu" class="icon-button mobile-only" aria-label="Open menu"></button><button id="searchButton" class="search-button"><span class="search-icon"></span> Search everything <kbd>⌘ K</kbd></button><button id="quickButton" class="primary-button"><span class="button-icon"></span> <span>New</span></button></header>
+        <section id="page" class="page" aria-live="polite"></section>
+      </main>
+    </div>
+    <div id="modalRoot"></div>
+    <div id="toast" role="status"></div>
+    <script src="app.js"></script>
+  </body>
+</html>
