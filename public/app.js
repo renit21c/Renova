@@ -243,7 +243,7 @@ function finance() {
       : `${esc(transaction.category || 'Uncategorized')}${accountLabel ? ` · ${accountLabel}` : ''}`;
     const isTransfer = transaction.type === 'Transfer';
     return `<div class="list-row finance-transaction"><div class="event-info"><b>${esc(transaction.description || (isTransfer ? 'Account transfer' : transaction.category || transaction.type))}</b><small>${esc(transaction.date || '')} · ${detail}</small></div><span class="amount ${isTransfer ? 'muted' : transaction.type === 'Income' ? 'income' : 'expense'}">${isTransfer ? '' : transaction.type === 'Income' ? '+' : '−'}${money(transaction.amount)}</span><button class="text-button" onclick="${isTransfer ? 'openTransfer' : 'openTransaction'}('${transaction.id}')">Edit</button><button class="text-button danger-button" onclick="deleteTransaction('${transaction.id}')">Delete</button></div>`;
-  }).join('') || '<div class="empty">No transactions recorded. Add one to begin.</div>'}</section></div><div class="section-stack"><section class="panel"><div class="panel-title"><h2>Accounts</h2><button class="text-button" onclick="openAccount()">Add</button></div>${accounts.map((account) => `<div class="list-row finance-account"><div class="event-info"><b>${esc(account.name)}</b><small>${esc(account.type || 'Account')}</small></div><span class="amount">${money(accountBalance(account))}</span><div class="finance-account-actions"><button class="text-button" onclick="openAccount('${account.id}')">Edit</button><button class="text-button danger-button" onclick="deleteAccount('${account.id}')">Delete</button></div></div>`).join('') || '<div class="empty">Add your first account.</div>'}</section><section class="panel"><div class="panel-title"><h2>Spending by category</h2></div>${spendingByCategory()}</section><section class="panel"><div class="panel-title"><h2>Spending trend</h2></div>${spendingTrend()}</section></div></div>`;
+  }).join('') || '<div class="empty">No transactions recorded. Add one to begin.</div>'}</section></div><div class="section-stack"><section class="panel"><div class="panel-title"><h2>Accounts</h2><button class="text-button" onclick="openAccount()">Add</button></div>${accounts.map((account) => `<div class="list-row finance-account"><div class="event-info"><b>${esc(account.name)}</b><small>${esc(account.type || 'Account')}</small></div><span class="amount">${money(accountBalance(account))}</span><div class="finance-account-actions"><button class="text-button" onclick="openTransaction('', '${account.id}', 'Income')">＋ Income</button><button class="text-button" onclick="openTransaction('', '${account.id}', 'Expense')">− Expense</button><button class="text-button" onclick="openAccount('${account.id}')">Edit</button><button class="text-button danger-button" onclick="deleteAccount('${account.id}')">Delete</button></div></div>`).join('') || '<div class="empty">Add your first account.</div>'}</section><section class="panel"><div class="panel-title"><h2>Spending by category</h2></div>${spendingByCategory()}</section><section class="panel"><div class="panel-title"><h2>Spending trend</h2></div>${spendingTrend()}</section></div></div>`;
 }
 
 function accountBalance(account) {
@@ -262,23 +262,33 @@ function accountBalance(account) {
     }, 0);
 }
 
-function openTransaction(id = '') {
+function openTransaction(id = '', selectedAccountId = '', selectedType = 'Expense') {
   const transaction = state.transactions.find((item) => item.id === id);
   if (transaction?.type === 'Transfer') {
     openTransfer(id);
     return;
   }
+  if (!state.accounts.length) {
+    toast('Add an account before recording income or expenses.');
+    openAccount();
+    return;
+  }
+  const selectedId = transaction?.accountId || selectedAccountId;
   const accountOptions = state.accounts.map((account) =>
-    `<option value="${esc(account.id)}" ${transaction?.accountId === account.id ? 'selected' : ''}>${esc(account.name)}</option>`,
+    `<option value="${esc(account.id)}" ${selectedId === account.id ? 'selected' : ''}>${esc(account.name)}</option>`,
   ).join('');
   modal(
-    `<h2>${id ? 'Edit transaction' : 'Record transaction'}</h2><form onsubmit="saveTransaction(event,'${id}')"><div class="form-grid"><div class="field"><label>Type</label><select name="type">${['Expense', 'Income'].map((type) => `<option ${transaction?.type === type ? 'selected' : ''}>${type}</option>`).join('')}</select></div><div class="field"><label>Account</label><select name="accountId" ${state.accounts.length ? 'required' : ''}><option value="" ${transaction?.accountId ? '' : 'selected'}>${state.accounts.length ? 'Choose an account' : 'No accounts yet'}</option>${accountOptions}</select></div><div class="field"><label>Amount</label><div class="currency-input"><span>Rp</span><input name="amount" type="text" inputmode="numeric" autocomplete="off" required placeholder="0" value="${transaction ? new Intl.NumberFormat('id-ID').format(Number(transaction.amount)) : ''}" oninput="formatRupiahInput(this)"></div></div><div class="field"><label>Date</label><input name="date" type="date" value="${esc(transaction?.date || now)}" required></div><div class="field"><label>Category</label><select name="category"><option value="">Choose a category</option>${financeCategories.map((category) => `<option ${transaction?.category === category ? 'selected' : ''}>${category}</option>`).join('')}${transaction?.category && !financeCategories.includes(transaction.category) ? `<option selected>${esc(transaction.category)}</option>` : ''}</select></div><div class="field full"><label>Description</label><input name="description" value="${esc(transaction?.description || '')}" placeholder="What was this for?"></div></div><div class="modal-actions"><button type="button" class="secondary-button" onclick="closeModal()">Cancel</button><button class="primary-button">${id ? 'Save changes' : 'Save transaction'}</button></div></form>`,
+    `<h2>${id ? 'Edit transaction' : 'Record transaction'}</h2><form onsubmit="saveTransaction(event,'${id}')"><div class="form-grid"><div class="field"><label>Type</label><select name="type">${['Expense', 'Income'].map((type) => `<option ${transaction?.type === type || (!transaction && selectedType === type) ? 'selected' : ''}>${type}</option>`).join('')}</select></div><div class="field"><label>Account</label><select name="accountId" required>${accountOptions}</select></div><div class="field"><label>Amount</label><div class="currency-input"><span>Rp</span><input name="amount" type="text" inputmode="numeric" autocomplete="off" required placeholder="0" value="${transaction ? new Intl.NumberFormat('id-ID').format(Number(transaction.amount)) : ''}" oninput="formatRupiahInput(this)"></div></div><div class="field"><label>Date</label><input name="date" type="date" value="${esc(transaction?.date || now)}" required></div><div class="field"><label>Category</label><select name="category"><option value="">Choose a category</option>${financeCategories.map((category) => `<option ${transaction?.category === category ? 'selected' : ''}>${category}</option>`).join('')}${transaction?.category && !financeCategories.includes(transaction.category) ? `<option selected>${esc(transaction.category)}</option>` : ''}</select></div><div class="field full"><label>Description</label><input name="description" value="${esc(transaction?.description || '')}" placeholder="What was this for?"></div></div><div class="modal-actions"><button type="button" class="secondary-button" onclick="closeModal()">Cancel</button><button class="primary-button">${id ? 'Save changes' : 'Save transaction'}</button></div></form>`,
   );
 }
 
 function saveTransaction(event, id = '') {
   event.preventDefault();
   const values = Object.fromEntries(new FormData(event.target));
+  if (!state.accounts.some((account) => account.id === values.accountId)) {
+    toast('Choose a valid account for this transaction.');
+    return;
+  }
   const nextTransaction = {
     ...values,
     amount: parseRupiahInput(values.amount),
