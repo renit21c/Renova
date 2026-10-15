@@ -185,3 +185,40 @@
     padding-left: 5px;
   }
 }
+
+.finance-account {
+  flex-wrap: wrap;
+}
+
+.finance-account-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.finance-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@media (max-width: 760px) {
+  .finance-actions {
+    justify-content: flex-start;
+  }
+
+  .finance-transaction {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .finance-transaction .event-info {
+    flex: 1 1 100%;
+  }
+
+  .finance-transaction .amount {
+    margin-right: auto;
+  }
+}
