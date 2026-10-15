@@ -404,7 +404,7 @@ function RenovaWorkspace({
             title="Close navigation menu"
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="m14 6-6 6 6 6" />
+              <path d="m18 6-12 12M6 6l12 12" />
             </svg>
             <span>Close menu</span>
           </button>

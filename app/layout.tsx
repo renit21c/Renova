@@ -14,6 +14,7 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <link rel="stylesheet" href="/styles.css" />
+        <link rel="stylesheet" href="/mobile.css" />
       </head>
       <body>{children}</body>
     </html>
