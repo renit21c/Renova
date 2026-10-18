@@ -17,6 +17,7 @@ type GoogleCalendarEventBody = {
   description?: string;
   start: { date?: string; dateTime?: string };
   end: { date?: string; dateTime?: string };
+  recurrence?: string[];
 };
 type GoogleCalendarEvent = {
   id?: string;
@@ -223,6 +224,13 @@ function validGoogleEventBody(body: unknown): body is GoogleCalendarEventBody {
   } else {
     return false;
   }
+  const recurrence = body.recurrence;
+  if (recurrence !== undefined && (
+    !Array.isArray(recurrence) ||
+    recurrence.length !== 1 ||
+    typeof recurrence[0] !== "string" ||
+    !/^RRULE:FREQ=(DAILY|WEEKLY|MONTHLY)(?:;UNTIL=\d{8}(?:T\d{6}Z)?)?$/.test(recurrence[0])
+  )) return false;
   return Number.isFinite(startValue) && Number.isFinite(endValue) && endValue > startValue;
 }
 
