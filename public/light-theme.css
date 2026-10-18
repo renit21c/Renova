@@ -1,0 +1,87 @@
+body:not(.dark) {
+  --blue: #d63384;
+}
+
+body:not(.dark) .primary-button {
+  background: #d63384;
+  color: #fff;
+}
+
+body:not(.dark) .primary-button:hover {
+  background: #c22570;
+  opacity: 1;
+}
+
+body:not(.dark) .brand-mark {
+  background: #d63384;
+  color: #fff;
+}
+
+body:not(.dark) .nav-link:hover {
+  background: rgba(214, 51, 132, 0.08);
+}
+
+body:not(.dark) .nav-link.active {
+  color: #b42369;
+  background: rgba(214, 51, 132, 0.11);
+  box-shadow: inset 0 0 0 1px rgba(214, 51, 132, 0.12);
+}
+
+body:not(.dark) .icon-button:hover,
+body:not(.dark) .avatar:hover {
+  background: rgba(214, 51, 132, 0.09);
+}
+
+body:not(.dark) .avatar:hover {
+  color: #b42369;
+}
+
+body:not(.dark) .toolbar input:focus,
+body:not(.dark) input:focus,
+body:not(.dark) textarea:focus,
+body:not(.dark) select:focus,
+body:not(.dark) .currency-input:focus-within {
+  border-color: #d63384;
+  box-shadow: 0 0 0 3px rgba(214, 51, 132, 0.14);
+}
+
+body:not(.dark) .calendar-event {
+  background: #fce7f3;
+  color: #a61e5c;
+}
+
+body:not(.dark) .week-day.today {
+  background: rgba(214, 51, 132, 0.06);
+}
+
+body:not(.dark) .week-event {
+  border-color: rgba(214, 51, 132, 0.14);
+  background: rgba(214, 51, 132, 0.07);
+}
+
+body:not(.dark) .task-status-to-do {
+  background: #fce7f3;
+  color: #a61e5c;
+}
+
+body:not(.dark) .auth-field input:focus {
+  border-color: #d63384;
+  box-shadow: 0 0 0 4px rgba(214, 51, 132, 0.14);
+}
+
+body:not(.dark) .auth-minimal-brand {
+  color: #b42369;
+}
+
+body:not(.dark) .auth-minimal .auth-field input:focus {
+  border-color: #d63384;
+  box-shadow: 0 1px 0 #d63384;
+}
+
+body:not(.dark) .auth-minimal .auth-submit {
+  background: #d63384;
+}
+
+body:not(.dark) .auth-minimal .auth-submit:hover:not(:disabled) {
+  background: #c22570;
+}

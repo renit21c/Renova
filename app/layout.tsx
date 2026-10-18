@@ -20,6 +20,7 @@ export default function RootLayout({
       <head>
         <link rel="stylesheet" href="/styles.css" />
         <link rel="stylesheet" href="/mobile.css" />
+        <link rel="stylesheet" href="/light-theme.css" />
       </head>
       <body>{children}</body>
     </html>
