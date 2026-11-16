@@ -210,6 +210,10 @@ function RenovaWorkspace({
 
   const [syncConflict, setSyncConflict] = useState(false);
   const syncRef = useRef<ReturnType<typeof workspaceSync> | null>(null);
+  const syncLabel = syncConflict ? 'Konflik'
+    : syncStatus.startsWith('Tersimpan di cloud') ? 'Tersimpan'
+    : /gagal|penuh|pulih/i.test(syncStatus) ? 'Periksa sync'
+    : /offline|lokal/i.test(syncStatus) ? 'Lokal' : 'Menyimpan';
 
   useEffect(() => {
     let active = true;
@@ -347,22 +351,23 @@ function RenovaWorkspace({
               aria-label="Open menu"
               aria-expanded={false}
             />
-            <button id="searchButton" className="search-button">
+            <button id="searchButton" className="search-button" aria-label="Search Renova" title="Search">
               <span className="search-icon" />
-              Search everything <kbd>⌘ K</kbd>
+              <span className="search-label">Search</span> <kbd>⌘ K</kbd>
             </button>
-            <button id="quickButton" className="primary-button">
+            <button id="quickButton" className="primary-button" aria-label="New record" title="New record">
               <span className="button-icon" /> <span>New</span>
             </button>
-            <span
-              className="status cloud-status"
-              role="status"
-              aria-live="polite"
-            >
-              {syncStatus}
-            </span>
-            <button className="text-button logout-button" onClick={onSignOut}>
-              Keluar
+            <details className="sync-menu" data-sync={syncLabel}>
+              <summary aria-label={`Sinkronisasi: ${syncLabel}`} title={syncStatus}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M7 18a5 5 0 0 1-1-9.9 6.5 6.5 0 0 1 12.5 1.5A4.3 4.3 0 0 1 18 18M9 17l2 2 4-4" /></svg>
+                <span className="sync-dot" aria-hidden="true" />
+                <span className="sync-label" role="status" aria-live="polite">{syncLabel}</span>
+              </summary>
+              <p>{syncStatus}</p>
+            </details>
+            <button className="text-button logout-button compact-action" onClick={onSignOut} aria-label="Keluar" title="Keluar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M10 4H7a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h3M14 8l4 4-4 4m-5-4h9" /></svg><span>Keluar</span>
             </button>
           </header>
           <section id="page" className="page" aria-live="polite" />

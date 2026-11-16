@@ -15,6 +15,10 @@ function rememberView() {
 }
 function afterWorkspaceRender() {
   syncThemeChrome();
+  if(route==='finance'){
+    const details=document.getElementById('financeMoreFilters');
+    if(details)details.open=!(window.matchMedia?.('(max-width: 760px)').matches??false);
+  }
   if (route === 'tasks') {
     for (const [id, value] of Object.entries(featurePrefs)) {
       const input = document.getElementById(id); if (input) input.value = value;
@@ -113,9 +117,9 @@ function featureCloseModal(force = false) {
 function featureHome() {
   const active = state.tasks.filter(t => !['Completed','Archived'].includes(t.status));
   const events = calendarEvents().filter(e => e.date >= now).sort((a,b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
-  const schedule = (title, items) => `<section class="panel"><div class="panel-title"><h2>${title}</h2><a href="#calendar">Open calendar</a></div>${items.map(e => `<div class="schedule-item"><span class="time">${esc(e.time || 'All day')}</span><div class="event-info"><b>${esc(e.title)}</b><small>${esc(e.date)} · ${esc(e.location || e.source || 'Local calendar')}</small></div></div>`).join('') || '<div class="empty">No events.</div>'}</section>`;
-  const block = (title, items) => `<section class="panel"><div class="panel-title"><h2>${title}</h2><button class="text-button" onclick="openTask()">Add task</button></div>${taskRows(items)}</section>`;
-  return heading(`${greeting()}${state.profile.nickname ? ', ' + esc(state.profile.nickname) : ''}.`, `${dateLabel(now)} · ${esc(state.focus || 'Choose one meaningful thing to move forward today.')}`) + `<div class="dashboard-grid"><div class="section-stack">${schedule('Today’s schedule', events.filter(e => e.date === now))}${block('Overdue', active.filter(t => t.due && t.due < now))}${block('Today’s tasks', active.filter(t => t.due === now))}</div><div class="section-stack">${schedule('Upcoming events', events.filter(e => e.date > now).slice(0,5))}${block('Unscheduled tasks', active.filter(t => !t.due).slice(0,5))}<section class="panel"><h2>Personal focus</h2><p>${esc(state.focus || 'Set a focus for this week')}</p><button class="secondary-button" onclick="openFocus()">Edit focus</button><p>${state.tasks.filter(t => t.status === 'Completed' && t.completed === now).length} completed today</p><a href="#finance">Finance · ${money(balance())}</a></section></div></div>`;
+  const schedule = (title, items) => `<section class="panel"><div class="panel-title"><h2>${title}</h2><a class="action-icon" href="#calendar" aria-label="Open calendar" title="Open calendar">${icon('calendar')}</a></div>${items.map(e => `<div class="schedule-item"><span class="time">${esc(e.time || 'All day')}</span><div class="event-info"><b>${esc(e.title)}</b><small>${esc(e.date)} · ${esc(e.location || e.source || 'Local calendar')}</small></div></div>`).join('') || '<div class="empty">No events.</div>'}</section>`;
+  const block = (title, items) => `<section class="panel"><div class="panel-title"><h2>${title}</h2><button class="icon-button action-icon" onclick="openTask()" aria-label="Add task" title="Add task">${icon('plus')}</button></div>${taskRows(items)}</section>`;
+  return heading(`${greeting()}${state.profile.nickname ? ', ' + esc(state.profile.nickname) : ''}.`, `${dateLabel(now)}`) + `<div class="dashboard-grid"><div class="section-stack">${schedule('Today’s schedule', events.filter(e => e.date === now))}${block('Overdue', active.filter(t => t.due && t.due < now))}${block('Today’s tasks', active.filter(t => t.due === now))}</div><div class="section-stack">${schedule('Upcoming events', events.filter(e => e.date > now).slice(0,5))}${block('Unscheduled tasks', active.filter(t => !t.due).slice(0,5))}<section class="panel"><h2>Personal focus</h2><p>${esc(state.focus || 'Set a focus for this week')}</p><button class="secondary-button" onclick="openFocus()">Edit focus</button><p>${state.tasks.filter(t => t.status === 'Completed' && t.completed === now).length} completed today</p><a href="#finance">Finance · ${money(balance())}</a></section></div></div>`;
 }
 function featureSearchNow() {
   const q = document.getElementById('globalSearch').value.trim().toLowerCase();

@@ -32,6 +32,7 @@ export default function RootLayout({
         <link rel="stylesheet" href="/workspace-features.css" />
         <link rel="stylesheet" href="/design.css" />
         <link rel="stylesheet" href="/soft-ui.css" />
+        <link rel="stylesheet" href="/mobile-ui.css" />
       </head>
       <body>{children}<PwaClient /></body>
     </html>

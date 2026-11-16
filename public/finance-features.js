@@ -9,6 +9,8 @@ function filteredTransactions() {
 function updateFinanceFilters() {
   const previousMonth = financeFilters().month;
   featurePrefs.finance = Object.fromEntries(new FormData(document.getElementById('financeFilters')));
+  const count=document.getElementById('financeFilterCount');
+  if(count)count.textContent=Number(Boolean(featurePrefs.finance.account))+Number(Boolean(featurePrefs.finance.type))||'';
   financePage=1; selectedTransactions.clear(); rememberView();
   if (previousMonth !== featurePrefs.finance.month) render(); else renderFinanceResults();
 }
@@ -25,7 +27,7 @@ function categorySummary(month) {
   const totals={}; state.transactions.filter(t=>t.type==='Expense'&&t.date.startsWith(month)).forEach(t=>{const c=t.category||'Uncategorized';totals[c]=(totals[c]||0)+Number(t.amount);});
   const entries=Object.entries(totals).sort((a,b)=>b[1]-a[1]), total=entries.reduce((n,[,v])=>n+v,0);
   const categories=entries.map(([c,v])=>`<div class="budget-row"><div class="panel-title"><span>${esc(c)}</span><b>${money(v)}</b></div><div class="progress"><span style="width:${v/total*100}%"></span></div></div>`).join('') || '<p class="empty">Belum ada pengeluaran bulan ini.</p>';
-  return categories + '<h3>Spending trend · last six months</h3>' + spendingTrend();
+  return categories + '<h3>6 bulan terakhir</h3>' + spendingTrend();
 }
 function budgetSummary(month) {
   return state.budgets.filter(b=>b.month===month).map(b=>{

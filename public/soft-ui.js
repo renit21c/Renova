@@ -22,6 +22,14 @@ function softIcon(name) {
     'arrow-in':'<path d="M17 7 7 17M7 8v9h9"/>',
     'arrow-out':'<path d="M7 17 17 7M8 7h9v9"/>',
     transfer:'<path d="M4 8h15m-4-4 4 4-4 4M20 16H5m4-4-4 4 4 4"/>',
+    upload:'<path d="M12 16V4m-4 4 4-4 4 4M4 15v3a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-3"/>',
+    download:'<path d="M12 4v12m-4-4 4 4 4-4M4 17v1a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-1"/>',
+    edit:'<path d="m14.5 5.5 4 4M5 15l10-10a2.8 2.8 0 0 1 4 4L9 19l-5 1 1-5Z"/>',
+    trash:'<path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l.8 12a2 2 0 0 0 2 2h6.4a2 2 0 0 0 2-2L18 7M10 11v6m4-6v6"/>',
+    more:'<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
+    'chevron-left':'<path d="m14 6-6 6 6 6"/>',
+    'chevron-right':'<path d="m10 6 6 6-6 6"/>',
+    filter:'<path d="M4 7h16M7 12h10m-7 5h4"/>',
   };
   if(name==='event')name='calendar';
   return `<svg class="icon soft-icon ${name==='menu'?'menu-icon':''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name]||paths.sparkle}</svg>`;
@@ -54,14 +62,25 @@ function mobileNavigation(open) {
 }
 function initSoftUi() {
   mobileNavigation(false);
-  window.matchMedia?.('(max-width: 760px)').addEventListener('change',()=>mobileNavigation(false));
+  window.matchMedia?.('(max-width: 760px)').addEventListener('change',event=>{
+    mobileNavigation(false);
+    const details=document.getElementById('financeMoreFilters');if(details)details.open=!event.matches;
+  });
   window.addEventListener('renova:notice',event=>showToast(event.detail.message,event.detail));
   document.addEventListener('keydown',event=>{
+    if(event.key==='Escape'&&window.matchMedia?.('(max-width: 760px)').matches){
+      const details=document.getElementById('financeMoreFilters');if(details?.open)details.open=false;
+    }
     if(event.key!=='Tab'||!document.body.classList.contains('menu-open'))return;
     const controls=[...document.querySelectorAll('.sidebar button,.sidebar a[href]')].filter(el=>!el.disabled&&el.getClientRects().length);
     const first=controls[0],last=controls[controls.length-1];if(!first)return;
     if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
     else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+  });
+  document.addEventListener('click',event=>{
+    if(!window.matchMedia?.('(max-width: 760px)').matches)return;
+    const details=document.getElementById('financeMoreFilters');
+    if(details?.open&&!event.target.closest('.finance-filter-details'))details.open=false;
   });
 }
 function syncThemeChrome() {

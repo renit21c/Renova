@@ -17,7 +17,10 @@ function money(n){return new Intl.NumberFormat('id-ID',{style:'currency',currenc
 function dateLabel(d){return new Intl.DateTimeFormat('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'}).format(new Date(d+'T12:00:00'));}
 function toast(...args) { return showToast(...args); }
 function setRoute(r){route=r;location.hash=r;render();} function renderNav(){document.querySelector('#nav').innerHTML=nav.map((x,i)=>`${i===0||i===5||i===8?'<div class="nav-group">'+(i?`<div class="nav-label">${i===5?'Money':'Personal'}</div>`:''):''}<a class="nav-link ${route===x[0]?'active':''}" href="#${x[0]}"><span class="nav-icon">${icon(x[2])}</span>${x[1]}</a>${[4,7,9].includes(i)?'</div>':''}`).join('')}
-function heading(title,sub,action=''){return `<div class="page-heading"><div><div class="eyebrow">Renova</div><h1>${title}</h1><p>${sub}</p></div>${action}</div>`}
+function heading(title,sub,action=''){
+  const simple=['Tasks','Calendar','Finance','Goals','Journal','Projects','Investments','My Journey','Settings'];
+  return `<div class="page-heading"><div><h1>${title}</h1>${sub&&!simple.includes(title)?`<p>${sub}</p>`:''}</div>${action}</div>`;
+}
 function greeting(){let h=Number(new Intl.DateTimeFormat('en-GB',{hour:'2-digit',hourCycle:'h23',timeZone:state.profile.timezone}).format(new Date()));return h<12?'Good morning':h<18?'Good afternoon':'Good evening'}
 function age(){if(!state.profile.birthDate)return '';let b=new Date(state.profile.birthDate),n=new Date();let y=n.getFullYear()-b.getFullYear();if(n<new Date(n.getFullYear(),b.getMonth(),b.getDate()))y--;return y}
 
