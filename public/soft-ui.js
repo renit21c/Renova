@@ -87,5 +87,5 @@ function initSoftUi() {
   });
 }
 function syncThemeChrome() {
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content',state.theme==='dark'?'#141c2a':'#fbf7fa');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content',state.theme==='dark'?'#15171b':'#fbf7fa');
 }

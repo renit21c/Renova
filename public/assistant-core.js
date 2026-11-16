@@ -78,7 +78,7 @@
     if(intent==='tasks'){
       const completed=has(q,/\b(selesai|completed|done)\b/),overdue=has(q,/\b(overdue|terlambat|telat|lewat)\b/),unscheduled=has(q,/\b(tanpa deadline|tanpa tanggal|unscheduled)\b/),high=has(q,/\b(high|tinggi|urgent|mendesak)\b/);
       const all=has(q,/\b(semua|all)\b/),priority=has(q,/\b(prioritas|dikerjakan|kerjain)\b/);
-      const namedTask=matchName(q,tasks.map(t=>t.title));
+      const namedTask=context.preset?undefined:matchName(q,tasks.map(t=>t.title));
       let found=tasks.filter(t=>completed?t.status==='Completed'&&(!range.explicit||inRange(t.completed)):!['Completed','Archived'].includes(t.status));
       if(namedTask)found=found.filter(t=>t.title===namedTask);
       if(!completed)found=found.filter(t=>unscheduled?!t.due:overdue?validDate(t.due)&&t.due<today:(all||namedTask)&&!range.explicit?true:priority&&!range.explicit?(!t.due||t.due<=today):range.explicit?inRange(t.due):(!t.due||inRange(t.due)||t.due<today));
@@ -95,7 +95,7 @@
       const note=context.googleConnected?' Google Calendar hanya mencakup event yang sudah dimuat; buka Calendar untuk sinkronisasi.':'';
       return respond(intent,'Jadwal · '+range.label,(found.length?`${found.length} agenda tercatat.${found.length>8?' Menampilkan 8 pertama.':''}`:'Belum ada agenda yang tercatat pada periode ini.')+note,found.map(e=>({label:e.title||'Tanpa judul',detail:[e.date,e.time||'Seharian',e.location||'',e.source==='google'?'Google Calendar':''].filter(Boolean).join(' · '),date:e.date,route:'calendar'})),'calendar',['Jadwal hari ini','Jadwal besok','Jadwal minggu ini']);
     }
-    const account=matchName(q,accounts.map(a=>a.name));
+    const account=context.preset?undefined:matchName(q,accounts.map(a=>a.name));
     if(!account&&/\b(?:rekening|akun|account)\s+(?!semua\b|saya\b|ku\b|apa\b|bulan\b|hari\b|minggu\b)([a-z0-9][a-z0-9 -]*)/.test(q))return respond(intent,'Rekening belum dikenali','Gunakan nama rekening yang sudah tercatat.',accounts.map(a=>({label:a.name,route:'finance'})),'finance');
     if(intent==='balance'&&!account){
       const unknown=q.replace(/\b(saldo|balance|berapa|total|uang|saya|ku|rekening|akun|account|accounts|semua|hari|ini|bulan|lalu|depan|sekarang|apa|today|month|last|this|now)\b/g,'').replace(/[0-9-]/g,'').trim();
@@ -103,7 +103,7 @@
     }
     const accountIds=new Set(accounts.filter(a=>a.name===account).map(a=>a.id));
     const aliases=[[/\b(makan|makanan|food|groceries)\b/,/food|grocer|makan/i],[/\b(transport|bensin|ongkos)\b/,/transport|bensin|ongkos/i],[/\b(gaji|salary)\b/,/gaji|salary/i]];
-    let category=matchName(q,transactions.map(t=>t.category));
+    let category=context.preset?undefined:matchName(q,transactions.map(t=>t.category));
     if(!category)for(const [pattern,categoryPattern]of aliases)if(pattern.test(q)){
       const matches=[...new Set(transactions.map(t=>t.category).filter(c=>c&&categoryPattern.test(c)))];
       if(matches.length===1)category=matches[0];

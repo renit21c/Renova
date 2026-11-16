@@ -1,0 +1,51 @@
+/* Neutral dark surfaces; blue is reserved for actions and selected states. */
+body.dark {
+  --bg: #15171b;
+  --surface: #1d2025;
+  --surface-muted: #25292f;
+  --text: #e6e8eb;
+  --muted: #a8afb9;
+  --border: #343a43;
+  --accent: #9abce2;
+  --accent-soft: #283443;
+  --accent-text: #b7cee8;
+  --blue: var(--accent);
+  --rose-soft: var(--accent-soft);
+  --rose-text: var(--accent-text);
+  --hero-bg: #212831;
+  --hero-border: #353e49;
+  --hero-text: #e6ebf1;
+  --hero-muted: #adb6c2;
+  --green: #93c8b4;
+  --red: #dfa6af;
+  --panel-shadow: none;
+  --shadow: 0 16px 44px #00000030;
+}
+body.dark .ambient { display: none; }
+body.dark .sidebar.glass, body.dark .topbar.glass { background: var(--surface); box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+body.dark .panel, body.dark .finance-stat, body.dark .account-card { background: var(--surface); box-shadow: none; border-color: var(--border); }
+body.dark .balance-hero { background: var(--hero-bg); border-color: var(--hero-border); box-shadow: none; }
+body.dark .balance-hero::after { display: none; }
+body.dark .nav-link.active { background: #29323d; color: #cad9eb; }
+body.dark .nav-link.active .nav-icon { background: transparent; }
+body.dark .primary-button { background: #9abce2; color: #162332; box-shadow: none; }
+body.dark .primary-button:hover { background: #adc9e8; box-shadow: none; }
+body.dark .secondary-button { background: transparent; box-shadow: none; }
+body.dark .secondary-button:hover { background: var(--surface-muted); }
+body.dark .bar { background: #58728e; }
+body.dark .stat-net .stat-symbol { background: #2a323d; color: #b7c6d7; }
+body.dark .account-color-1 { background: #2b3038; color: #b7c2d0; }
+body.dark .week-day.today { background: #252f3a; }
+body.dark .week-event { background: #28313d; border-color: #3a4656; color: var(--text); }
+body.dark .modal-backdrop { background: #00000070; backdrop-filter: blur(3px); }
+body.dark .modal { background: var(--surface); border-color: #3b414a; box-shadow: 0 18px 60px #00000040; }
+body.dark .assistant-panel { box-shadow: 0 16px 50px #00000040; border-color: #3c434d; }
+body.dark .assistant-user { background: #293440; color: var(--text); }
+body.dark .assistant-avatar { background: #2a323d; color: #b7c6d7; }
+body.dark .assistant-launcher { background: #273443; color: #c4d8ed; border-color: #425063; box-shadow: none; }
+body.dark .assistant-topics button[aria-pressed=true] { background: #343b44; color: var(--text); }
+body.dark .assistant-period button[aria-pressed=true] { background: #2c3744; color: #c2d5eb; }
+body.dark .assistant-options button { background: var(--surface); }
+body.dark .assistant-options button:hover { background: #282e36; border-color: #63758b; }
+body.dark #toast { background: #252a31; color: var(--text); border-color: #3c444e; box-shadow: 0 8px 28px #00000030; }
+body.dark .record-menu > div { box-shadow: 0 10px 30px #00000035; }

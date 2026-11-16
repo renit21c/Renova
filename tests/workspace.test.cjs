@@ -8,7 +8,7 @@ function workspace(){
   const document={activeElement:null,querySelector:selector=>{if(selector.includes('#modalRoot form'))return null;if(!elements.has(selector))elements.set(selector,element());return elements.get(selector);},querySelectorAll:()=>[],getElementById:id=>document.querySelector('#'+id),addEventListener(){},createElement:element,body:element()};
   const ctx=vm.createContext({console,Intl,Date,Map,Set,URL,URLSearchParams,JSON,crypto:require('node:crypto').webcrypto,localStorage:storage(),document,location:{hash:'',search:''},history:{replaceState(){}},setTimeout:()=>1,clearTimeout(){},setInterval(){},queueMicrotask(){},confirm:()=>true,CustomEvent:class{constructor(type,options){this.type=type;this.detail=options?.detail;}},FormData:class{constructor(form){return Object.entries(form.values||{})[Symbol.iterator]();}}});
   ctx.window=ctx;ctx.sessionStorage=storage();ctx.addEventListener=()=>{};ctx.dispatchEvent=()=>{};
-  for(const name of ['finance-core','workspace-features','finance-features','finance-layout','soft-ui','assistant-core','assistant-ui','app'])vm.runInContext(fs.readFileSync(`public/${name}.js`,'utf8').replace('initWorkspaceFeatures();render();completeGoogleOAuth();',''),ctx);
+  for(const name of ['finance-core','workspace-features','finance-features','finance-layout','soft-ui','assistant-core','assistant-options','assistant-menu','app'])vm.runInContext(fs.readFileSync(`public/${name}.js`,'utf8').replace('initWorkspaceFeatures();render();completeGoogleOAuth();',''),ctx);
   vm.runInContext('state.budgets=[];now="2026-11-16";render=()=>{};',ctx);
   return {ctx,run:code=>vm.runInContext(code,ctx),elements};
 }
@@ -96,4 +96,9 @@ test('Mobile navigation synchronizes overlay, accessibility, and scroll lock',()
   const {ctx,run,elements}=workspace();ctx.matchMedia=()=>({matches:true});run('setMobileSidebar(true)');
   assert.equal(elements.get('.sidebar').classList.contains('open'),true);assert.equal(elements.get('#mobileMenu').getAttribute('aria-expanded'),'true');assert.equal(elements.get('.app-shell > main').getAttribute('inert'),'');
   run('setMobileSidebar(false)');assert.equal(elements.get('.sidebar').classList.contains('open'),false);assert.equal(elements.get('.sidebar').getAttribute('inert'),'');assert.equal(elements.get('.app-shell > main').getAttribute('inert'),undefined);
+});
+test('Assistant UI rejects free-form questions before reading or changing any records',()=>{
+  const {run}=workspace(),before=run('JSON.stringify(state)');
+  assert.equal(run('askAssistant("hapus semua transaksi")'),false);
+  assert.equal(run('assistantMessages.length'),0);assert.equal(run('JSON.stringify(state)'),before);
 });

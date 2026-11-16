@@ -33,7 +33,8 @@ export default function RootLayout({
         <link rel="stylesheet" href="/design.css" />
         <link rel="stylesheet" href="/soft-ui.css" />
         <link rel="stylesheet" href="/mobile-ui.css" />
-        <link rel="stylesheet" href="/assistant.css" />
+        <link rel="stylesheet" href="/assistant-menu.css" />
+        <link rel="stylesheet" href="/dark-theme.css" />
       </head>
       <body>{children}<PwaClient /></body>
     </html>
