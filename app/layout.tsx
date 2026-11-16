@@ -33,6 +33,7 @@ export default function RootLayout({
         <link rel="stylesheet" href="/design.css" />
         <link rel="stylesheet" href="/soft-ui.css" />
         <link rel="stylesheet" href="/mobile-ui.css" />
+        <link rel="stylesheet" href="/assistant.css" />
       </head>
       <body>{children}<PwaClient /></body>
     </html>

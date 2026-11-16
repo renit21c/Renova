@@ -30,6 +30,9 @@ function softIcon(name) {
     'chevron-left':'<path d="m14 6-6 6 6 6"/>',
     'chevron-right':'<path d="m10 6 6 6-6 6"/>',
     filter:'<path d="M4 7h16M7 12h10m-7 5h4"/>',
+    chat:'<path d="M7 4h10a4 4 0 0 1 4 4v6a4 4 0 0 1-4 4h-6l-5 3v-3a4 4 0 0 1-3-4V8a4 4 0 0 1 4-4Z"/><path d="M8 9h8M8 13h5"/>',
+    send:'<path d="m4 10 14-6a1.4 1.4 0 0 1 2 2l-6 14-3-7-7-3Zm7 3 6-6"/>',
+    refresh:'<path d="M20 7v5h-5M4 17v-5h5M6 6a7 7 0 0 1 12 1l2 5M4 12l2 5a7 7 0 0 0 12 1"/>',
   };
   if(name==='event')name='calendar';
   return `<svg class="icon soft-icon ${name==='menu'?'menu-icon':''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name]||paths.sparkle}</svg>`;

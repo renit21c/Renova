@@ -240,7 +240,7 @@ function RenovaWorkspace({
         userId: session.user.id,
       };
       // Separate data rules, workspace interactions, and finance workflows.
-      for (const src of ['/finance-core.js', '/workspace-features.js', '/finance-features.js', '/finance-layout.js', '/soft-ui.js', '/app.js']) {
+      for (const src of ['/finance-core.js', '/workspace-features.js', '/finance-features.js', '/finance-layout.js', '/soft-ui.js', '/assistant-core.js', '/assistant-ui.js', '/app.js']) {
         if (!active) return;
         await loadScript(src);
       }
@@ -382,6 +382,7 @@ function RenovaWorkspace({
         </section>
       )}
       <div id="modalRoot" />
+      <div id="assistantRoot" />
       <div id="toast" role="status" />
     </>
   );

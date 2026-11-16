@@ -207,6 +207,7 @@ function initWorkspaceFeatures() {
   try { featurePrefs = JSON.parse(localStorage.getItem(`${STORE}:views`) || '{}'); } catch { featurePrefs = {}; }
   calendarOffset = Number(featurePrefs.calendarOffset) || 0;
   state.budgets ||= []; now = workspaceDate(); today = new Date(now + 'T12:00:00');
+  initAssistant();
   document.addEventListener('input', e => { if (e.target.closest('.task-filters')) rememberView(); });
   document.addEventListener('change', e => { if (e.target.closest('.task-filters')) rememberView(); });
   window.addEventListener('beforeunload', e => { if (modalDirty) { e.preventDefault(); e.returnValue = ''; } });
