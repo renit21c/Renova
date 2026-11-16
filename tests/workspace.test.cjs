@@ -8,7 +8,7 @@ function workspace(){
   const document={activeElement:null,querySelector:selector=>{if(selector.includes('#modalRoot form'))return null;if(!elements.has(selector))elements.set(selector,element());return elements.get(selector);},querySelectorAll:()=>[],getElementById:id=>document.querySelector('#'+id),addEventListener(){},createElement:element,body:element()};
   const ctx=vm.createContext({console,Intl,Date,Map,Set,URL,URLSearchParams,JSON,crypto:require('node:crypto').webcrypto,localStorage:storage(),document,location:{hash:'',search:''},history:{replaceState(){}},setTimeout:()=>1,clearTimeout(){},setInterval(){},queueMicrotask(){},confirm:()=>true,CustomEvent:class{constructor(type,options){this.type=type;this.detail=options?.detail;}},FormData:class{constructor(form){return Object.entries(form.values||{})[Symbol.iterator]();}}});
   ctx.window=ctx;ctx.sessionStorage=storage();ctx.addEventListener=()=>{};ctx.dispatchEvent=()=>{};
-  for(const name of ['finance-core','workspace-features','finance-features','app'])vm.runInContext(fs.readFileSync(`public/${name}.js`,'utf8').replace('initWorkspaceFeatures();render();completeGoogleOAuth();',''),ctx);
+  for(const name of ['finance-core','workspace-features','finance-features','finance-layout','app'])vm.runInContext(fs.readFileSync(`public/${name}.js`,'utf8').replace('initWorkspaceFeatures();render();completeGoogleOAuth();',''),ctx);
   vm.runInContext('state.budgets=[];now="2026-11-16";render=()=>{};',ctx);
   return {ctx,run:code=>vm.runInContext(code,ctx),elements};
 }
