@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { workspaceSync } from "../utils/workspace-sync";
 import type { Session } from "@supabase/supabase-js";
 import { createClient } from "../utils/supabase/client";
 
@@ -204,147 +205,49 @@ function RenovaWorkspace({
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
+    setSidebarCollapsed(localStorage.getItem('renova-sidebar-collapsed') === 'true');
+  }, []);
+
+  const [syncConflict, setSyncConflict] = useState(false);
+  const syncRef = useRef<ReturnType<typeof workspaceSync> | null>(null);
+
+  useEffect(() => {
     let active = true;
-    let saveTimer: ReturnType<typeof setTimeout> | undefined;
-    let saveQueue = Promise.resolve();
-
-    async function loadWorkspace() {
-      const userStore = `${STORE}:${session.user.id}`;
-      const { data, error: loadError } = await supabase
-        .from("renova_workspace")
-        .select("state")
-        .eq("id", session.user.id)
-        .maybeSingle();
-
-      if (loadError) throw loadError;
-      if (data) {
-        if (
-          !data.state ||
-          typeof data.state !== "object" ||
-          Array.isArray(data.state)
-        ) {
-          throw new Error(
-            "Data workspace Supabase tidak memiliki format yang valid.",
-          );
-        }
-        localStorage.setItem(userStore, JSON.stringify(data.state));
-        if (
-          !localStorage.getItem(LOCAL_OWNER) &&
-          (localStorage.getItem(STORE) || localStorage.getItem(LEGACY_STORE))
-        ) {
-          localStorage.setItem(LOCAL_OWNER, session.user.id);
-        }
-      } else {
-        let localState = localStorage.getItem(userStore);
-        if (!localState) {
-          const localOwner = localStorage.getItem(LOCAL_OWNER);
-          if (!localOwner || localOwner === session.user.id) {
-            localState =
-              localStorage.getItem(STORE) ??
-              localStorage.getItem(LEGACY_STORE);
-            if (localState) {
-              localStorage.setItem(userStore, localState);
-              localStorage.setItem(LOCAL_OWNER, session.user.id);
-            }
-          }
-        }
-        if (localState) {
-          const parsed: unknown = JSON.parse(localState);
-          if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-            throw new Error(
-              "Data lokal Renova tidak memiliki format yang valid.",
-            );
-          }
-        }
-      }
-
-      if (!active) return;
+    const scripts: HTMLScriptElement[] = [];
+    const sync = workspaceSync(supabase, session.user.id, {
+      status: (text) => { if (active) setSyncStatus(text); },
+      conflict: (value) => { if (active) setSyncConflict(value); },
+      error: (text) => { if (active) setError(text); },
+    });
+    syncRef.current = sync;
+    const loadScript = (src: string) => new Promise<void>((resolve, reject) => {
+      const script = document.createElement('script');
+      scripts.push(script); script.src = src; script.async = false;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error('Gagal memuat ' + src));
+      document.body.appendChild(script);
+    });
+    void (async () => {
+      if (!await sync.load() || !active) return;
       window.RENOVA_CONFIG = {
         supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
         supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
         googleCalendarEnabled,
         userId: session.user.id,
       };
-
-      const onSave = (event: Event) => {
-        const snapshot = (event as CustomEvent<WorkspaceState>).detail;
-        if (!snapshot || typeof snapshot !== "object") {
-          setSyncStatus("Gagal menyimpan data dengan format yang tidak valid.");
-          return;
-        }
-        setSyncStatus("Menyimpan ke cloud...");
-        if (saveTimer) clearTimeout(saveTimer);
-        saveTimer = setTimeout(() => {
-          saveQueue = saveQueue
-            .then(async () => {
-              const { error: saveError } = await supabase
-                .from("renova_workspace")
-                .upsert(
-                  {
-                    id: session.user.id,
-                    state: snapshot,
-                    updated_at: new Date().toISOString(),
-                  },
-                  { onConflict: "id" },
-                );
-              if (saveError) throw saveError;
-              if (active) setSyncStatus("Tersimpan di cloud");
-            })
-            .catch((saveError: unknown) => {
-              console.error("Renova cloud save failed:", saveError);
-              if (active) {
-                const message =
-                  saveError instanceof Error
-                    ? saveError.message
-                    : String(saveError);
-                setSyncStatus(`Gagal menyimpan: ${message}`);
-              }
-            });
-        }, 400);
-      };
-
-      window.addEventListener("renova:save", onSave);
-      const script = document.createElement("script");
-      script.src = "/app.js";
-      script.async = true;
-      script.onload = () => {
-        if (active) setReady(true);
-      };
-      script.onerror = () => {
-        if (active)
-          setError(
-            "Renova gagal dimuat. Muat ulang halaman untuk mencoba lagi.",
-          );
-      };
-      document.body.appendChild(script);
-
-      return () => {
-        window.removeEventListener("renova:save", onSave);
-        script.remove();
-        delete window.RENOVA_CONFIG;
-      };
-    }
-
-    let cleanup: (() => void) | undefined;
-    void loadWorkspace()
-      .then((dispose) => {
-        cleanup = dispose;
-      })
-      .catch((loadError: unknown) => {
-        console.error("Renova workspace load failed:", loadError);
-        if (active) {
-          setError(
-            `Workspace gagal dimuat. Data lokal tidak diubah. ${
-              loadError instanceof Error ? loadError.message : String(loadError)
-            }`,
-          );
-        }
-      });
-
+      // Separate data rules, workspace interactions, and finance workflows.
+      for (const src of ['/finance-core.js', '/workspace-features.js', '/finance-features.js', '/app.js']) {
+        if (!active) return;
+        await loadScript(src);
+      }
+      if (active) setReady(true);
+    })().catch((cause: unknown) => {
+      if (active) setError(cause instanceof Error ? cause.message : String(cause));
+    });
     return () => {
-      active = false;
-      if (saveTimer) clearTimeout(saveTimer);
-      cleanup?.();
+      active = false; sync.dispose(); syncRef.current = null;
+      scripts.forEach(script => script.remove());
+      delete window.RENOVA_CONFIG;
     };
   }, [googleCalendarEnabled, session.user.id, supabase]);
 
@@ -387,7 +290,10 @@ function RenovaWorkspace({
           <button
             className="icon-button sidebar-collapse"
             type="button"
-            onClick={() => setSidebarCollapsed((collapsed) => !collapsed)}
+            onClick={() => setSidebarCollapsed((collapsed) => {
+              localStorage.setItem('renova-sidebar-collapsed', String(!collapsed));
+              return !collapsed;
+            })}
             aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             aria-expanded={!sidebarCollapsed}
             title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
@@ -462,6 +368,14 @@ function RenovaWorkspace({
           <section id="page" className="page" aria-live="polite" />
         </main>
       </div>
+      {syncConflict && (
+        <section className="sync-conflict panel" role="alert">
+          <strong>Workspace berubah di perangkat/tab lain</strong>
+          <p>Data lokal tetap aman. Pilih versi yang ingin dipakai. Versi yang diganti disimpan sebagai recovery backup di Settings.</p>
+          <button className="secondary-button" onClick={() => void syncRef.current?.resolve('local')}>Gunakan versi lokal</button>
+          <button className="secondary-button" onClick={() => void syncRef.current?.resolve('cloud')}>Gunakan versi cloud</button>
+        </section>
+      )}
       <div id="modalRoot" />
       <div id="toast" role="status" />
     </>

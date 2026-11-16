@@ -21,6 +21,7 @@ export default function RootLayout({
         <link rel="stylesheet" href="/styles.css" />
         <link rel="stylesheet" href="/mobile.css" />
         <link rel="stylesheet" href="/light-theme.css" />
+        <link rel="stylesheet" href="/workspace-features.css" />
       </head>
       <body>{children}</body>
     </html>
