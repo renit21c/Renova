@@ -14,6 +14,7 @@ function rememberView() {
   localStorage.setItem(`${STORE}:views`, JSON.stringify(featurePrefs));
 }
 function afterWorkspaceRender() {
+  syncThemeChrome();
   if (route === 'tasks') {
     for (const [id, value] of Object.entries(featurePrefs)) {
       const input = document.getElementById(id); if (input) input.value = value;
@@ -34,6 +35,9 @@ function afterWorkspaceRender() {
     const section = document.createElement('section'); section.className = 'panel';
     section.innerHTML = `<h2>Backup & restore</h2><p class="muted">Restore mengganti seluruh workspace. Backup sebelum restore akan disimpan di browser.</p><div class="finance-actions"><button class="secondary-button" onclick="chooseRestore()">Restore JSON backup</button><button class="secondary-button" onclick="downloadRecovery()">Download recovery backup</button><button class="text-button danger-button" onclick="openClearRecords('workspace')">Delete all workspace records</button></div>`;
     document.getElementById('page').append(section);
+    const installSection=document.createElement('section');installSection.className='panel install-panel';
+    installSection.innerHTML=`<span class="install-symbol">${icon('home')}</span><div><h2>Renova, lebih dekat</h2><p class="muted">Tambahkan ke layar utama untuk membuka Renova seperti aplikasi.</p></div><button class="secondary-button" onclick="window.dispatchEvent(new CustomEvent('renova:install'))">Install Renova</button>`;
+    document.getElementById('page').append(installSection);
   }
   document.querySelectorAll('.currency-input > span').forEach(el => el.textContent = state.profile.currency || 'IDR');
   if (undoHistory.length) {
@@ -195,6 +199,7 @@ function clearRecords(event) {
   save(); closeModal(); render(); toast('Records deleted. Undo or download recovery backup in Settings.');
 }
 function initWorkspaceFeatures() {
+  initSoftUi();
   try { featurePrefs = JSON.parse(localStorage.getItem(`${STORE}:views`) || '{}'); } catch { featurePrefs = {}; }
   calendarOffset = Number(featurePrefs.calendarOffset) || 0;
   state.budgets ||= []; now = workspaceDate(); today = new Date(now + 'T12:00:00');

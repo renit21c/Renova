@@ -4,11 +4,11 @@ const fs=require('node:fs'),vm=require('node:vm');
 const core=require('../public/finance-core.js');
 const storage=()=>{const map=new Map();return{getItem:k=>map.get(k)??null,setItem:(k,v)=>map.set(k,String(v)),removeItem:k=>map.delete(k),key:i=>[...map.keys()][i],get length(){return map.size}};};
 function workspace(){
-  const elements=new Map();const element=()=>({innerHTML:'',textContent:'',value:'',classList:{add(){},remove(){},toggle(){}},setAttribute(){},addEventListener(){},append(){},focus(){},getClientRects(){return[1]},closest(){return null}});
+  const elements=new Map();const element=()=>{const classes=new Set(),attributes=new Map();return{innerHTML:'',textContent:'',value:'',classList:{add:c=>classes.add(c),remove:c=>classes.delete(c),contains:c=>classes.has(c),toggle(c,on){on?classes.add(c):classes.delete(c);}},setAttribute:(k,v)=>attributes.set(k,v),removeAttribute:k=>attributes.delete(k),getAttribute:k=>attributes.get(k),addEventListener(){},append(){},focus(){},getClientRects(){return[1]},closest(){return null}};};
   const document={activeElement:null,querySelector:selector=>{if(selector.includes('#modalRoot form'))return null;if(!elements.has(selector))elements.set(selector,element());return elements.get(selector);},querySelectorAll:()=>[],getElementById:id=>document.querySelector('#'+id),addEventListener(){},createElement:element,body:element()};
   const ctx=vm.createContext({console,Intl,Date,Map,Set,URL,URLSearchParams,JSON,crypto:require('node:crypto').webcrypto,localStorage:storage(),document,location:{hash:'',search:''},history:{replaceState(){}},setTimeout:()=>1,clearTimeout(){},setInterval(){},queueMicrotask(){},confirm:()=>true,CustomEvent:class{constructor(type,options){this.type=type;this.detail=options?.detail;}},FormData:class{constructor(form){return Object.entries(form.values||{})[Symbol.iterator]();}}});
   ctx.window=ctx;ctx.sessionStorage=storage();ctx.addEventListener=()=>{};ctx.dispatchEvent=()=>{};
-  for(const name of ['finance-core','workspace-features','finance-features','finance-layout','app'])vm.runInContext(fs.readFileSync(`public/${name}.js`,'utf8').replace('initWorkspaceFeatures();render();completeGoogleOAuth();',''),ctx);
+  for(const name of ['finance-core','workspace-features','finance-features','finance-layout','soft-ui','app'])vm.runInContext(fs.readFileSync(`public/${name}.js`,'utf8').replace('initWorkspaceFeatures();render();completeGoogleOAuth();',''),ctx);
   vm.runInContext('state.budgets=[];now="2026-11-16";render=()=>{};',ctx);
   return {ctx,run:code=>vm.runInContext(code,ctx),elements};
 }
@@ -86,4 +86,14 @@ test('Static preview contains the navigation controls needed during bootstrap',(
 test('Bank debit/credit CSV columns infer expense and income without double counting',()=>{
   const {run}=workspace();run(`state.accounts=[{id:'a',name:'Bank',initial:0}];csvImport=RenovaCore.parseCSV('date,debit,credit\\n2026-11-16,25000,0\\n2026-11-17,0,100000');document.getElementById('csvMap').values={date:'0',type:'',amount:'',debit:'1',credit:'2',account:'',to_account:'',category:'',description:'',numberFormat:'plain',defaultAccount:'Bank',defaultType:'Expense',dateFormat:'iso'};previewFinanceCSV();`);
   assert.equal(run('csvPreview.errors'),0);assert.equal(run('csvPreview.rows[0].type'),'Expense');assert.equal(run('csvPreview.rows[1].type'),'Income');
+});
+test('Notification escapes its message and supports manual dismissal',()=>{
+  const {run,elements}=workspace();run(`toast('<img src=x onerror=alert(1)>');`);
+  const toast=elements.get('#toast');assert.ok(toast.innerHTML.includes('&lt;img'));assert.ok(toast.classList.contains('show'));assert.equal(toast.getAttribute('role'),'status');
+  elements.get('#toastClose').onclick();assert.equal(toast.classList.contains('show'),false);
+});
+test('Mobile navigation synchronizes overlay, accessibility, and scroll lock',()=>{
+  const {ctx,run,elements}=workspace();ctx.matchMedia=()=>({matches:true});run('setMobileSidebar(true)');
+  assert.equal(elements.get('.sidebar').classList.contains('open'),true);assert.equal(elements.get('#mobileMenu').getAttribute('aria-expanded'),'true');assert.equal(elements.get('.app-shell > main').getAttribute('inert'),'');
+  run('setMobileSidebar(false)');assert.equal(elements.get('.sidebar').classList.contains('open'),false);assert.equal(elements.get('.sidebar').getAttribute('inert'),'');assert.equal(elements.get('.app-shell > main').getAttribute('inert'),undefined);
 });

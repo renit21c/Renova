@@ -1,13 +1,21 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import PwaClient from './pwa-client';
 
 export const metadata: Metadata = {
   title: "Renova",
   description: "A private, local-first personal workspace.",
+  manifest: '/manifest.webmanifest',
+  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'Renova' },
   icons: {
     icon: "/favicon.png",
     shortcut: "/favicon.png",
-    apple: "/favicon.png",
+    apple: "/icons/apple-touch-icon.png",
   },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width', initialScale: 1, viewportFit: 'cover',
+  themeColor: '#fbf7fa',
 };
 
 export default function RootLayout({
@@ -23,8 +31,9 @@ export default function RootLayout({
         <link rel="stylesheet" href="/light-theme.css" />
         <link rel="stylesheet" href="/workspace-features.css" />
         <link rel="stylesheet" href="/design.css" />
+        <link rel="stylesheet" href="/soft-ui.css" />
       </head>
-      <body>{children}</body>
+      <body>{children}<PwaClient /></body>
     </html>
   );
 }

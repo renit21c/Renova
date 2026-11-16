@@ -18,7 +18,7 @@ function financeScreen() {
   const expense=entries.filter(t=>t.type==='Expense').reduce((n,t)=>n+Number(t.amount),0);
   const total=state.accounts.reduce((n,a)=>n+accountBalance(a),0);
   const monthLabel=financeMonthLabel(month);
-  const metric=(label,value,symbol,kind,caption)=>`<article class="finance-stat ${kind}"><div class="stat-top"><span>${label}</span><span class="stat-symbol" aria-hidden="true">${symbol}</span></div><strong>${money(value)}</strong><small>${caption}</small></article>`;
+  const metric=(label,value,symbol,kind,caption)=>`<article class="finance-stat ${kind}"><div class="stat-top"><span>${label}</span><span class="stat-symbol" aria-hidden="true">${icon(kind==='stat-income'?'arrow-in':kind==='stat-expense'?'arrow-out':'transfer')}</span></div><strong>${money(value)}</strong><small>${caption}</small></article>`;
   const accounts=state.accounts.map((a,i)=>`
     <article class="account-card">
       <div class="account-card-top"><span class="account-symbol account-color-${i%3}">${icon('wallet')}</span><div class="account-name"><b>${esc(a.name)}</b><small>${esc(a.type||'Rekening')}</small></div>
@@ -59,7 +59,7 @@ function financeTransactionList() {
     const date=new Intl.DateTimeFormat('id-ID',{day:'numeric',month:'short',year:'numeric'}).format(new Date(t.date+'T12:00:00'));
     return `<div class="transaction-record ${selectedTransactions.has(t.id)?'is-selected':''}">
       <input type="checkbox" aria-label="Pilih ${esc(t.description||typeLabel)}" ${selectedTransactions.has(t.id)?'checked':''} onchange="selectTransaction('${t.id}',this.checked)">
-      <span class="transaction-symbol transaction-${kind}" aria-hidden="true">${t.type==='Income'?'↙':t.type==='Expense'?'↗':'⇄'}</span>
+      <span class="transaction-symbol transaction-${kind}" aria-hidden="true">${icon(t.type==='Income'?'arrow-in':t.type==='Expense'?'arrow-out':'transfer')}</span>
       <div class="transaction-description"><b>${esc(t.description||t.category||typeLabel)}</b><small><time datetime="${t.date}">${date}</time><span> · ${esc(account)}</span></small></div>
       <span class="transaction-category">${esc(t.category||typeLabel)}</span>
       <strong class="amount ${t.type==='Income'?'income':t.type==='Expense'?'expense':'muted'}">${t.type==='Income'?'+':t.type==='Expense'?'−':''}${money(t.amount)}</strong>
